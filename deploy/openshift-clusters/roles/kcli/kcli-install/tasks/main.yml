@@ -1,0 +1,30 @@
+---
+# kcli-install role main tasks
+
+- name: Check prerequisites
+  include_tasks: prerequisites.yml
+
+- name: Validate configuration
+  include_tasks: validate.yml
+
+# Configuration setup
+
+- name: Prepare deployment
+  include_tasks: prepare.yml
+
+- name: Deploy OpenShift cluster with kcli
+  include_tasks: deploy.yml
+
+# Set essential paths as facts for playbook use
+- name: Set cluster paths as facts for post-deployment tasks
+  ansible.builtin.set_fact:
+    kubeconfig_path: "{{ ansible_user_dir }}/.kcli/clusters/{{ test_cluster_name }}/auth/kubeconfig"
+    kubeadmin_password_path: "{{ ansible_user_dir }}/.kcli/clusters/{{ test_cluster_name }}/auth/kubeadmin-password"
+    cluster_name: "{{ test_cluster_name }}"
+
+- name: Copy authentication files to standard location
+  include_role:
+    name: config
+    tasks_from: copy_auth
+
+# Deployment completed 

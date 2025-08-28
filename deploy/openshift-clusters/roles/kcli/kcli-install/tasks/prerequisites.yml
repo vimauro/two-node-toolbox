@@ -1,0 +1,15 @@
+---
+# Prerequisites check and installation for kcli-install
+
+# Setup libvirt virtualization infrastructure  
+- name: Setup libvirt infrastructure
+  include_tasks: libvirt_setup.yml
+
+# Install and configure kcli
+- name: Install and configure kcli
+  include_tasks: kcli_install.yml
+
+# Use config role for authentication validation
+- name: Validate authentication files
+  include_role:
+    name: config 

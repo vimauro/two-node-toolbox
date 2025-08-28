@@ -1,0 +1,69 @@
+---
+# Configuration validation for kcli-install
+
+- name: Validate cluster name
+  fail:
+    msg: "test_cluster_name must be defined and not empty"
+  when: test_cluster_name is not defined or test_cluster_name == ""
+
+- name: Validate topology
+  fail:
+    msg: "topology must be either 'fencing' or 'arbiter'"
+  when: topology is not defined or topology not in ['fencing', 'arbiter']
+
+- name: Validate domain
+  fail:
+    msg: "domain must be defined and not empty"
+  when: domain is not defined or domain == ""
+
+- name: Validate two-node configuration
+  fail:
+    msg: "For two-node OpenShift with fencing, ctlplanes must be 2 and workers must be 0"
+  when: ctlplanes != 2 or workers != 0
+
+- name: Validate memory requirements
+  fail:
+    msg: "Minimum memory requirement for OpenShift control plane nodes is 16GB (16384 MB)"
+  when: vm_memory < 16384
+
+- name: Validate disk size requirements
+  fail:
+    msg: "Minimum disk size requirement for OpenShift nodes is 120GB"
+  when: vm_disk_size < 120
+
+- name: Validate OpenShift version format
+  fail:
+    msg: "ocp_tag must be in format 'X.YY' (e.g., '4.16')"
+  when: ocp_tag is not match('^[0-9]+\.[0-9]+$')
+
+- name: Validate BMC credentials for fencing
+  fail:
+    msg: "BMC user and password must be defined for fencing configuration"
+  when: bmc_user == "" or bmc_password == ""
+
+- name: Validate pull secret for CI builds
+  debug:
+    msg: "INFO: For CI builds, ensure your pull secret includes registry.ci.openshift.org access"
+  when: ocp_version == "ci"
+
+- name: Check if cluster already exists
+  command: kcli list vm
+  register: existing_vms
+  changed_when: false
+  failed_when: false
+
+- name: Check for existing cluster VMs
+  set_fact:
+    cluster_vms_exist: "{{ existing_vms.stdout_lines | select('search', test_cluster_name + '-ctlplane') | list | length > 0 }}"
+
+- name: Warn if cluster VMs already exist
+  debug:
+    msg: "WARNING: VMs for cluster {{ test_cluster_name }} may already exist. Use force_cleanup=true to remove them."
+  when: cluster_vms_exist
+
+- name: Fail if cluster exists and force_cleanup is false
+  fail:
+    msg: "Cluster {{ test_cluster_name }} already exists. Set force_cleanup=true to remove existing cluster first."
+  when: 
+    - cluster_vms_exist
+    - not force_cleanup 

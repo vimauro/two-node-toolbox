@@ -19,7 +19,14 @@ To use this guide, you will need a remote machine to run the cluster on and your
 This is the machine where you run the deployment scripts: all that's needed is Ansible.
 
 - Make sure you have the ansible-playbook command installed.
-- If you're missing the containers.podman collection, you can install it via: ansible-galaxy collection install containers.podman
+- Install required Ansible collections:
+  ```bash
+  ansible-galaxy collection install -r collections/requirements.yml
+  ```
+  This installs:
+  - `containers.podman`: For container operations
+  - `community.libvirt`: For libvirt virtualization management (kcli deployments)
+  - `kubernetes.core`: For Kubernetes resource management
 
 ### Remote Machine Requirements:
 
@@ -60,7 +67,7 @@ The deployment process involves updating configuration files and running an Ansi
   > Note: The config.sh file is passed to metal-scripts. A full list of acceptable values can be found by checking the linked config_example.sh file in the [openshift-metal3/dev-scripts/config_example.sh](https://github.com/openshift-metal3/dev-scripts/blob/master/config_example.sh) repository.
 
 #### Pull secret
-- Create `pull-secret.json`: Create a file named pull-secret.json in the `roles/install-dev/files/` directory and paste your pull secret JSON string into it.
+- Create `pull-secret.json`: Create a file named pull-secret.json in the `roles/dev-scripts/install-dev/files/` directory and paste your pull secret JSON string into it.
 
 
 #### SSH access (optional)
@@ -85,6 +92,35 @@ If you want to check the progress of the installation you can review or follow t
 
 > Note: The proxy.env file automatically detects its location and sets the correct absolute path for the kubeconfig, making it work from any directory where it's sourced.
 
+### Alternative: Direct Access from Hypervisor
+
+For direct cluster access **from within the hypervisor host** (not from your local machine), authentication files are automatically copied to a standard location:
+
+```
+~/auth/kubeconfig          # Cluster admin kubeconfig  
+~/auth/kubeadmin-password   # Default admin password
+```
+
+**From the hypervisor host only**, you can access the cluster directly:
+```bash
+# SSH into the hypervisor first
+ssh your-hypervisor-host
+
+# Option 1: Use default kubeconfig location (recommended)
+oc get nodes
+
+# Option 2: Explicitly set KUBECONFIG environment variable
+export KUBECONFIG=~/auth/kubeconfig
+oc get nodes
+
+# Get admin password for web console
+cat ~/auth/kubeadmin-password
+```
+
+The deployment automatically creates a symlink from `~/.kube/config` to `~/auth/kubeconfig`, so `oc` commands work without setting the `KUBECONFIG` environment variable.
+
+**Note**: This direct access only works from within the hypervisor. For access from your local machine, use the proxy setup described above.
+
 ### Optional: Accessing the Console WebUI
 
 If you wish to reach the Console WebUI, you can use any preferred proxy extension on your browser to do so.
@@ -105,6 +141,8 @@ If you wish to reach the Console WebUI, you can use any preferred proxy extensio
  ansible-playbook setup.yml -e "topology=arbiter" -e "method=agent" -e "interactive_mode=false" -i inventory.ini
 
 #### Redfish Stonith Configuration
+
+For more information on STONITH, go to the [official RHEL HA documentation](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/configuring_and_managing_high_availability_clusters/assembly_configuring-fencing-configuring-and-managing-high-availability-clusters)
 
 For clusters using the fencing topology on OpenShift 4.19.x, automatic Redfish stonith configuration is available. This feature configures Pacemaker stonith resources using Redfish fencing for BareMetalHost resources.
 

@@ -9,9 +9,13 @@
 
 # PHASE 1: DEPLOYING - Update state before starting installation
 - name: Set cluster state to deploying (full installation)
-  include_tasks: cluster-state.yml
+  include_role:
+    name: common
+    tasks_from: cluster-state
   vars:
     cluster_state_phase: 'deploying'
+    installation_method: 'ipi'
+    default_playbook_name: 'setup.yml'
   when: 
     - install_dev_mode is defined and install_dev_mode == 'install'
     - not kubeconfig_after_realclean.stat.exists
@@ -28,9 +32,13 @@
 
 # PHASE 1: DEPLOYING - Update state before starting redeploy
 - name: Set cluster state to deploying (redeploy)
-  include_tasks: cluster-state.yml
+  include_role:
+    name: common
+    tasks_from: cluster-state
   vars:
     cluster_state_phase: 'deploying'
+    installation_method: 'ipi'
+    default_playbook_name: 'redeploy.yml'
   when: install_dev_mode is defined and install_dev_mode == 'redeploy'
 
 # Redeploy mode (same topology)
@@ -53,10 +61,21 @@
     validate: bash -e %s
     marker: "# {mark} OPENSHIFT ALIAS BLOCK"
     block: "{{ lookup('template', 'oc_aliases.sh.j2') }}"
-- import_tasks: proxy.yml
+- name: Setup proxy configuration
+  include_role:
+    name: proxy-setup
+
+- name: Copy authentication files to standard location
+  include_role:
+    name: config
+    tasks_from: copy_auth
 
 # PHASE 2: DEPLOYED - Update state after successful completion
 - name: Set cluster state to deployed
-  include_tasks: cluster-state.yml
+  include_role:
+    name: common
+    tasks_from: cluster-state
   vars:
     cluster_state_phase: 'deployed'
+    installation_method: 'ipi'
+    default_playbook_name: 'setup.yml'

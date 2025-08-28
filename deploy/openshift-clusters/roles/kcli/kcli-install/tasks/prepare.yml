@@ -1,0 +1,128 @@
+---
+# Preparation tasks for kcli-install
+
+- name: Clean up existing cluster if force_cleanup is enabled
+  block:
+    - name: Check existing kcli clusters
+      command: kcli list cluster
+      register: existing_clusters
+      failed_when: false
+      changed_when: false
+
+    - name: Delete existing cluster by name
+      command: >
+        kcli delete cluster openshift {{ test_cluster_name }} --yes
+      register: cluster_cleanup_result
+      failed_when: false
+      when: existing_clusters.stdout_lines | select('search', test_cluster_name) | list | length > 0
+
+    - name: Find VMs matching cluster name pattern
+      command: kcli list vm
+      register: all_vms
+      changed_when: false
+
+    - name: Clean up orphaned VMs if they exist
+      command: kcli delete vm {{ item }} --yes
+      register: vm_cleanup_result
+      failed_when: false
+      loop:
+        - "{{ test_cluster_name }}-ctlplane-0"
+        - "{{ test_cluster_name }}-ctlplane-1"
+        - "{{ test_cluster_name }}-arbiter"
+      when: all_vms.stdout_lines | select('search', item) | list | length > 0
+
+    - name: Display cleanup results
+      debug:
+        msg: |
+          Cluster cleanup: {{ cluster_cleanup_result.stdout | default('not attempted') }}
+          VM cleanup: {{ vm_cleanup_result.results | selectattr('stdout', 'defined') | map(attribute='stdout') | list | default(['not needed']) | join(', ') }}
+
+    - name: Wait for cleanup to complete
+      pause:
+        seconds: 30
+  when: force_cleanup
+
+# Authentication file preparation
+- name: Copy pull secret from files directory to remote host
+  copy:
+    src: "{{ role_path }}/files/pull-secret.json"
+    dest: "{{ ansible_user_dir }}/pull-secret.json"
+    mode: '0600'
+
+# SSH key generation for kcli cluster access
+- name: Check if SSH key already exists
+  stat:
+    path: "{{ ansible_user_dir }}/.ssh/id_ed25519"
+  register: ssh_key_check
+
+- name: Create .ssh directory if it doesn't exist
+  file:
+    path: "{{ ansible_user_dir }}/.ssh"
+    state: directory
+    mode: '0700'
+  when: not ssh_key_check.stat.exists
+
+- name: Generate SSH key pair for cluster access
+  command: ssh-keygen -t ed25519 -f {{ ansible_user_dir }}/.ssh/id_ed25519 -N ""
+  when: not ssh_key_check.stat.exists
+
+- name: Set proper permissions on SSH keys
+  file:
+    path: "{{ item.path }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ ansible_user_dir }}/.ssh/id_ed25519", mode: "0600" }
+    - { path: "{{ ansible_user_dir }}/.ssh/id_ed25519.pub", mode: "0644" }
+  when: not ssh_key_check.stat.exists
+
+- name: Display authentication file locations
+  debug:
+    msg: |
+      Using pull secret from: {{ ansible_user_dir }}/pull-secret.json
+      Using SSH key from: {{ ansible_user_dir }}/.ssh/id_ed25519.pub
+
+- name: Create temporary directory for kcli parameters
+  tempfile:
+    state: directory
+    suffix: kcli-params
+  register: temp_dir
+
+- name: Set kcli parameters file path
+  set_fact:
+    kcli_params_file: "{{ temp_dir.path }}/kcli-params.yml"
+
+- name: Set ksushy IP for BMC simulation for fencing topology
+  set_fact:
+    ksushy_ip: "192.168.122.1"
+  when: 
+    - topology == "fencing"
+    - ksushy_ip is not defined
+
+- name: Display ksushy configuration
+  debug:
+    msg: |
+      Network configuration for ksushy BMC simulator:
+      ksushy IP: {{ ksushy_ip }}
+      Topology: {{ topology }}
+      Note: Using libvirt bridge IP for VM-accessible BMC simulation
+      (Override with -e "ksushy_ip=X.X.X.X" if needed)
+  when: topology == "fencing"
+
+- name: Generate kcli parameter file
+  template:
+    src: kcli-params.yml.j2
+    dest: "{{ kcli_params_file }}"
+    mode: '0600'
+
+- name: Display generated parameters
+  debug:
+    msg: "Generated kcli parameters in {{ kcli_params_file }}"
+
+- name: Read and display kcli parameters
+  slurp:
+    src: "{{ kcli_params_file }}"
+  register: params_content
+
+- name: Show kcli deployment parameters
+  debug:
+    msg: "{{ params_content.content | b64decode | from_yaml }}" 
