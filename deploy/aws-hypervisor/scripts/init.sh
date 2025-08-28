@@ -10,9 +10,6 @@ instance_host="$(cat "${SCRIPT_DIR}/../${SHARED_DIR}/public_address")"
 echo "Adding host key for $instance_host to known_hosts..."
 ssh-keyscan -H "$instance_host" >> ~/.ssh/known_hosts 2>/dev/null
 
-ssh "$instance_ip 'mkdir -p ~/.ssh'"
-scp "$SSH_PUBLIC_KEY" "$instance_ip:~/.ssh/id_rsa.pub"
-
 scp "${SCRIPT_DIR}/configure.sh" "$instance_ip:~/configure.sh"
 
 # Create a minimal environment file with only the variables needed on the remote machine
