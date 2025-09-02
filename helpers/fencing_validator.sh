@@ -21,11 +21,31 @@ Examples (hosts):
   --hosts "2001:db8::a,2001:db8::b"
 
 Note: For IPv6, pass the raw address (no brackets). The script adds [ ] where needed.
-Env (optional): SSH_USER, SSH_KEY, KUBECONFIG, TRANSPORT, DISRUPTIVE, DRY_RUN, TIMEOUT, IP_A, IP_B, OC_BIN, OC_REQ_TIMEOUT, SHORT_TIMEOUT
+
+Timeouts:
+  --timeout <sec> / TIMEOUT
+      Maximum time (in seconds) to wait for a condition to succeed.
+      This is the overall loop timeout (e.g., waiting for a node or etcd to recover).
+      Default: 1200 seconds (20 min).
+
+  CMD_EXEC_TIMEOUT_SECS
+      Maximum time (in seconds) allowed for a single remote command to run
+      (e.g., one `podman exec`, one `pcs status` call).
+      This is enforced in `host_run` for both SSH and oc debug transports.
+      Default: 60 seconds.
+
+  OC_REQ_TIMEOUT
+      Per-request API timeout for the `oc` client when contacting the API server.
+      Applies to each HTTP request inside `oc` commands, not the overall command runtime.
+      Default: 10s.
+
+
+Env (optional): SSH_USER, SSH_KEY, KUBECONFIG, TRANSPORT, DISRUPTIVE, DRY_RUN, TIMEOUT, IP_A, IP_B, OC_BIN, OC_REQ_TIMEOUT, CMD_EXEC_TIMEOUT_SECS
 EOF
 }
 
 log(){ printf '\033[36m[INFO]\033[0m %s\n' "$*"; }
+warn(){ printf '\033[33m[WARN]\033[0m %s\n' "$*"; }
 err(){ printf '\033[31m[ERROR]\033[0m %s\n' "$*" >&2; }
 ok(){  printf '\033[32m[OK]\033[0m %s\n' "$*"; }
 
@@ -33,7 +53,7 @@ ok(){  printf '\033[32m[OK]\033[0m %s\n' "$*"; }
 SSH_USER="${SSH_USER:-core}"
 SSH_KEY="${SSH_KEY:-}"
 KUBECONFIG_PATH="${KUBECONFIG:-}"
-TRANSPORT="${TRANSPORT:-auto}"    # auto|ssh|ocdebug
+TRANSPORT="${TRANSPORT:-auto}"
 DISRUPTIVE="${DISRUPTIVE:-false}"
 DRY_RUN="${DRY_RUN:-false}"
 TIMEOUT="${TIMEOUT:-1200}"
@@ -41,7 +61,7 @@ IP_A="${IP_A:-}"
 IP_B="${IP_B:-}"
 OC_BIN="${OC_BIN:-oc}"
 OC_REQ_TIMEOUT="${OC_REQ_TIMEOUT:-10s}"
-SHORT_TIMEOUT="${SHORT_TIMEOUT:-60s}"
+CMD_EXEC_TIMEOUT_SECS="${CMD_EXEC_TIMEOUT_SECS:-60s}"
 
 valreq(){ [[ -n "${2-}" && "$2" != -* ]]; }
 
@@ -83,13 +103,13 @@ _fmt_host(){
 ssh_cmd() {
   local host="$(_fmt_host "$1")"; shift
   local keyopt=(); [[ -n "$SSH_KEY" ]] && keyopt=(-i "$SSH_KEY")
-  timeout "$SHORT_TIMEOUT" ssh \
+  timeout "$CMD_EXEC_TIMEOUT_SECS" ssh \
     -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
     -o ConnectTimeout=10 -o ServerAliveInterval=5 -o ServerAliveCountMax=3 \
     "${keyopt[@]}" "${SSH_USER}@${host}" "$@"
 }
 
-oc_run(){ timeout "$SHORT_TIMEOUT" "$OC_BIN" --request-timeout="$OC_REQ_TIMEOUT" "$@"; }
+oc_run(){ timeout "$CMD_EXEC_TIMEOUT_SECS" "$OC_BIN" --request-timeout="$OC_REQ_TIMEOUT" "$@"; }
 
 host_run() {
   local target="$1"; shift
@@ -99,7 +119,7 @@ host_run() {
   if [[ "$TRANSPORT" == ssh ]]; then
     ssh_cmd "$target" "sudo -n bash -lc '$cmd'"
   else
-    oc_run debug -q node/"$target" -- chroot /host bash -lc '$cmd'
+    oc_run debug -q node/"$target" -- chroot /host bash -lc "$raw"
   fi
 }
 
@@ -115,8 +135,8 @@ _sudo_check() {
 
 # -------- Discover nodes --------
 log "Detecting control-plane nodes…"
-mapfile -t A < <(timeout "$SHORT_TIMEOUT" $OC_BIN get nodes -l node-role.kubernetes.io/master= -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null || true)
-mapfile -t B < <(timeout "$SHORT_TIMEOUT" $OC_BIN get nodes -l node-role.kubernetes.io/control-plane= -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null || true)
+mapfile -t A < <(timeout "$CMD_EXEC_TIMEOUT_SECS" $OC_BIN get nodes -l node-role.kubernetes.io/master= -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null || true)
+mapfile -t B < <(timeout "$CMD_EXEC_TIMEOUT_SECS" $OC_BIN get nodes -l node-role.kubernetes.io/control-plane= -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null || true)
 declare -a CP_NODES=(); declare -A seen=()
 for n in "${A[@]}" "${B[@]}"; do [[ -z "${seen["$n"]+x}" ]] && { CP_NODES+=("$n"); seen["$n"]=1; }; done
 [[ ${#CP_NODES[@]} -eq 2 ]] || { err "Expected exactly 2 control-plane nodes, got ${#CP_NODES[@]}: ${CP_NODES[*]-}"; exit 1; }
@@ -231,16 +251,18 @@ wait_ready(){
 
 stonith_show(){
   host_run "$CONDUCTOR" \
-    "pcs stonith config 2>/dev/null || pcs stonith status 2>/dev/null || pcs stonith show 2>/dev/null" \
+    "(pcs stonith config || pcs stonith status || pcs stonith show) 2>&1" \
     || true
 }
 
 check_stonith(){
   log "Checking STONITH…"
   local out; out="$(stonith_show)"
-  [[ -n "$out" ]] || { err "No STONITH devices detected"; return 1; }
-  host_run "$CONDUCTOR" "pcs property show stonith-enabled 2>/dev/null || pcs property list 2>/dev/null" \
-    | grep -Eqi 'stonith-enabled[[:space:]]*(:|=)[[:space:]]*true' || { err "stonith-enabled=false"; return 1; }
+  [[ -n "$out" ]] || { err "No STONITH devices detected (pcs returned empty output)"; return 1; }
+  host_run "$CONDUCTOR" "pcs property show stonith-enabled 2>&1 || pcs property list 2>&1" \
+    | grep -Eqi 'stonith-enabled[[:space:]]*(:|=)[[:space:]]*true' \
+    || { err "stonith-enabled=false (or not reported)"; return 1; }
+
   ok "STONITH present and enabled"
 }
 
@@ -271,15 +293,24 @@ node_exec_target(){
 }
 
 etcd_two_started() {
-  local tgt="$1" out
-  if ! out="$(host_run "$tgt" "timeout $SHORT_TIMEOUT podman exec etcd sh -lc 'ETCDCTL_API=3 etcdctl member list -w table'" 2>&1)"; then
+  local tgt="$1" out rc
+  out="$(host_run "$tgt" "podman exec etcd sh -lc 'ETCDCTL_API=3 etcdctl member list -w table'" 2>&1)"
+  rc=$?
+  if grep -qE '^\|' <<<"$out"; then
+    awk -F'|' '/^\|/{
+      for(i=1;i<=NF;i++){gsub(/^[ \t]+|[ \t]+$/,"",$i)}
+      if(tolower($3)=="started" && tolower($7)=="false") c++
+    } END{ exit !(c>=2) }' <<<"$out"
+    return
+  fi
+  if (( rc != 0 )); then
+    if grep -Eqi 'no such container|container state improper|not running|missing required container_id' <<<"$out"; then
+      return 1
+    fi
     err "etcdctl failed on $tgt: ${out##*$'\n'}"
     return 2
   fi
-  awk -F'|' '/^\|/{
-    for(i=1;i<=NF;i++){gsub(/^[ \t]+|[ \t]+$/,"",$i)}
-    if(tolower($3)=="started" && tolower($7)=="false") c++
-  } END{ exit !(c>=2) }' <<<"$out"
+  return 1
 }
 
 etcd_ready(){
@@ -293,15 +324,20 @@ etcd_ready(){
 }
 
 wait_etcd(){
-  local deadline=$((SECONDS+TIMEOUT)) rc
-  log "Waiting for etcd to report 2 started non-learner members…"
+  local deadline=$((SECONDS + TIMEOUT / 2)) rc start=$SECONDS next=$((SECONDS + 30))
+  log "Waiting for etcd to report 2 started non-learner members (max wait: $((TIMEOUT/2))s)…"
   while (( SECONDS < deadline )); do
     etcd_ready; rc=$?
-    (( rc==0 )) && { ok "etcd has 2 started voters"; return 0; }
-    (( rc==2 )) && { err "etcd check failed (fatal)"; return 1; }
+    (( rc==0 )) && { ok "etcd has 2 started voters (waited $((SECONDS-start))s)"; return 0; }
+    (( rc==2 )) && { err "etcd check failed (fatal) after $((SECONDS-start))s"; return 1; }
+    (( SECONDS >= next )) && {
+      warn "[$((SECONDS-start))s elapsed, $((deadline-SECONDS))s remaining] Current etcd member status:"
+      host_run "$(node_exec_target "$NODE_A")" "podman exec etcd sh -lc 'ETCDCTL_API=3 etcdctl member list -w table' 2>/dev/null | head -n 5" || true
+      next=$((SECONDS + 30))
+    }
     sleep 6
   done
-  err "Timeout waiting for etcd quorum (2 started voters)"; return 1
+  err "Timeout waiting for etcd quorum (2 started voters)"
 }
 
 # -------- Conductor switch + fencing --------
