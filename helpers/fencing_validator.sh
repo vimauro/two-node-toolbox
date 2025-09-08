@@ -63,6 +63,9 @@ OC_BIN="${OC_BIN:-oc}"
 OC_REQ_TIMEOUT="${OC_REQ_TIMEOUT:-10s}"
 CMD_EXEC_TIMEOUT_SECS="${CMD_EXEC_TIMEOUT_SECS:-60s}"
 
+# valreq <flag> <value>
+# Returns success (0) if <value> exists and is not another option (i.e., doesn't start with '-').
+# Used in argument parsing to validate that an option expecting a value actually has one.
 valreq(){ [[ -n "${2-}" && "$2" != -* ]]; }
 
 while [[ $# -gt 0 ]]; do
@@ -259,8 +262,9 @@ check_stonith(){
   log "Checking STONITH…"
   local out; out="$(stonith_show)"
   [[ -n "$out" ]] || { err "No STONITH devices detected (pcs returned empty output)"; return 1; }
-  host_run "$CONDUCTOR" "pcs property show stonith-enabled 2>&1 || pcs property list 2>&1" \
-    | grep -Eqi 'stonith-enabled[[:space:]]*(:|=)[[:space:]]*true' \
+  host_run "$CONDUCTOR" \
+    'pcs property config stonith-enabled 2>&1 || pcs property list stonith-enabled 2>&1 || pcs property show --all stonith-enabled 2>&1' \
+  | grep -Eqi 'stonith-enabled[^[:alnum:]]*true' \
     || { err "stonith-enabled=false (or not reported)"; return 1; }
 
   ok "STONITH present and enabled"
