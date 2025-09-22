@@ -16,7 +16,7 @@
 - Automatic working directory configuration for storage optimization (`/home/dev-scripts`)
 - Essential package installation including golang, make, git, and development tools
 
-See `deploy/openshift-clusters/README-beaker.md` for detailed usage instructions.
+See `deploy/openshift-clusters/README-external-host.md` for detailed usage instructions.
 
 ---
 
