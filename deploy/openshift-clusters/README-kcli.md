@@ -14,7 +14,7 @@ The kcli deployment method automates OpenShift two-node cluster creation using *
 - Remote machine requirements (RHEL 9, 64GB RAM, etc.)
 - Optional AWS hypervisor setup
 
-The same prerequisites apply whether using dev-scripts or kcli deployment methods.
+The same prerequisites apply whether using dev-scripts or kcli deployment methods. If you're using a baremetal server not provisioned through the aws-hypervisor directory, please see the appropiate [README](README-external-host.md) to know how to run the init-host.yml playbook
 
 ## 2. Prerequisites
 
@@ -30,6 +30,7 @@ This installs:
 - `community.libvirt`: For libvirt virtualization management  
 - `kubernetes.core`: For Kubernetes resource management
 - `containers.podman`: For container operations
+- `ansible.posix`: Some systems might need this for certain system-level operations
 
 ### Automated Installation
 
