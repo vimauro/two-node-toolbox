@@ -166,7 +166,8 @@ $ make stop
 # When restarted, you'll need to redeploy the cluster from scratch
 $ make start
 # Quick deployment over clean server
-$ make fencing-ipi    # Deploy fencing topology
+$ make fencing-ipi    # Deploy fencing topology (IPI method)
+$ make fencing-agent  # Deploy fencing topology (Agent method) (WIP Experimental)
 $ make arbiter-ipi    # Deploy arbiter topology (IPI method)
 $ make arbiter-agent  # Deploy arbiter topology (Agent method)
 ```
