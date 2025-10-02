@@ -81,6 +81,9 @@
       ansible.builtin.debug:
         msg: "Installation tasks have completed for topology '{{ topology }}'."
 
+    - name: Update inventory with cluster VMs
+      include_tasks: roles/common/tasks/update-cluster-inventory.yml
+
   post_tasks:
     - name: Check if redfish configuration should be offered
       block:
