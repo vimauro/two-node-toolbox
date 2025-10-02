@@ -140,3 +140,14 @@ For fencing topology using kcli:
 ```bash
 ansible-playbook kcli-install.yml -i inventory.ini
 ```
+
+## Post-Deployment Features
+
+### Cluster VM Inventory Access
+
+After successful cluster deployment (using either setup.yml or kcli-install.yml), the inventory file is automatically updated to include the cluster VMs. This allows you to run Ansible playbooks directly on the cluster nodes from your local machine.
+
+The deployment automatically discovers running cluster VMs and adds them to the inventory with ProxyJump configuration through the hypervisor. For more details on using this feature, see:
+
+- [Main README - Cluster VM Inventory Access](README.md#cluster-vm-inventory-access)
+- [kcli README - Cluster VM Inventory Access](README-kcli.md#cluster-vm-inventory-access)

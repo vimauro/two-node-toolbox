@@ -1,0 +1,115 @@
+---
+# Update inventory with cluster VMs for direct Ansible access
+# This task discovers running cluster VMs and adds them to the inventory
+# with ProxyJump configuration through the hypervisor
+
+- name: Get cluster VM names
+  shell: |
+    sudo virsh list --name | grep "^{{ test_cluster_name }}"
+  register: cluster_vms
+  changed_when: false
+  failed_when: false
+
+- name: Check if cluster VMs were found
+  set_fact:
+    has_cluster_vms: "{{ cluster_vms.stdout_lines | length > 0 }}"
+
+- name: Process cluster VMs
+  when: has_cluster_vms | bool
+  block:
+    - name: Get VM IP addresses from libvirt DHCP leases
+      shell: |
+        VM_NAME="{{ item }}"
+        # Try to get IP from virsh domifaddr
+        IP=$(sudo virsh domifaddr "${VM_NAME}" | awk '/ipv4/ {print $4}' | cut -d'/' -f1)
+
+        # If that fails, try getting from DHCP leases
+        if [ -z "$IP" ]; then
+          MAC=$(sudo virsh domiflist "${VM_NAME}" | awk '/network/ {print $5}')
+          if [ -n "$MAC" ]; then
+            IP=$(sudo virsh net-dhcp-leases default | grep -i "$MAC" | awk '{print $5}' | cut -d'/' -f1)
+          fi
+        fi
+
+        echo "$IP"
+      register: vm_ips
+      loop: "{{ cluster_vms.stdout_lines }}"
+      changed_when: false
+      failed_when: false
+
+    - name: Build VM inventory data
+      set_fact:
+        vm_inventory_entries: |
+          {% set entries = [] %}
+          {% for vm in cluster_vms.stdout_lines %}
+          {%   set idx = loop.index0 %}
+          {%   set ip = vm_ips.results[idx].stdout | trim %}
+          {%   if ip | length > 0 %}
+          {%     set _ = entries.append({'name': vm, 'ip': ip}) %}
+          {%   endif %}
+          {% endfor %}
+          {{ entries }}
+
+    - name: Parse VM inventory entries
+      set_fact:
+        parsed_vm_entries: "{{ vm_inventory_entries | from_yaml }}"
+
+    - name: Get hypervisor connection info from inventory
+      set_fact:
+        hypervisor_host: "{{ hostvars[inventory_hostname]['ansible_host'] | default(inventory_hostname) }}"
+        hypervisor_user: "{{ hostvars[inventory_hostname]['ansible_user'] | default(ansible_user_id) }}"
+
+    - name: Update inventory file with cluster VMs
+      delegate_to: localhost
+      run_once: true
+      block:
+        - name: Read current inventory file
+          slurp:
+            src: "{{ playbook_dir }}/inventory.ini"
+          register: current_inventory
+
+        - name: Parse current inventory content
+          set_fact:
+            inventory_content: "{{ current_inventory.content | b64decode }}"
+
+        - name: Remove old cluster_vms section if exists
+          set_fact:
+            cleaned_inventory: "{{ inventory_content | regex_replace('\\n\\[cluster_vms\\].*?(\\n\\[|$)', '\\n\\1', multiline=True) }}"
+
+        - name: Build cluster_vms section
+          set_fact:
+            cluster_vms_section: |
+
+              [cluster_vms]
+              {% for entry in parsed_vm_entries %}
+              {{ entry.name }} ansible_host={{ entry.ip }}
+              {% endfor %}
+
+              [cluster_vms:vars]
+              ansible_ssh_common_args="-o ProxyJump={{ hypervisor_user }}@{{ hypervisor_host }} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+              ansible_user=core
+
+        - name: Write updated inventory
+          copy:
+            content: "{{ cleaned_inventory.rstrip() }}{{ cluster_vms_section }}"
+            dest: "{{ playbook_dir }}/inventory.ini"
+            backup: yes
+
+        - name: Display inventory update success
+          debug:
+            msg: |
+              Inventory updated with {{ parsed_vm_entries | length }} cluster VM(s):
+              {% for entry in parsed_vm_entries %}
+              - {{ entry.name }}: {{ entry.ip }}
+              {% endfor %}
+
+              VMs are accessible via ProxyJump through {{ hypervisor_user }}@{{ hypervisor_host }}
+
+              You can now run Ansible playbooks on cluster VMs using the 'cluster_vms' group.
+
+- name: No cluster VMs found
+  when: not (has_cluster_vms | bool)
+  debug:
+    msg: |
+      No cluster VMs found for cluster '{{ test_cluster_name }}'.
+      Inventory will not be updated with cluster VMs.
