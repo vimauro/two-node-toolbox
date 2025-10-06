@@ -56,8 +56,8 @@
 
     - name: Get hypervisor connection info from inventory
       set_fact:
-        hypervisor_host: "{{ hostvars[inventory_hostname]['ansible_host'] | default(inventory_hostname) }}"
-        hypervisor_user: "{{ hostvars[inventory_hostname]['ansible_user'] | default(ansible_user_id) }}"
+        hypervisor_host: "{{ hostvars[inventory_hostname]['ansible_host'] | default(inventory_hostname.split('@')[1] if '@' in inventory_hostname else inventory_hostname) }}"
+        hypervisor_user: "{{ hostvars[inventory_hostname]['ansible_user'] | default(inventory_hostname.split('@')[0] if '@' in inventory_hostname else 'ec2-user') }}"
 
     - name: Update inventory file with cluster VMs
       delegate_to: localhost
