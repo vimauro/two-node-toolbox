@@ -128,11 +128,12 @@
 
               [cluster_vms]
               {% for entry in parsed_vm_entries %}
-              {{ entry.name }} ansible_host=core@{{ entry.ip }}
+              {{ entry.name }} ansible_host={{ entry.ip }}
               {% endfor %}
 
               [cluster_vms:vars]
               ansible_ssh_common_args="-o ProxyJump={{ hypervisor_user }}@{{ hypervisor_host }} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+              ansible_user=core
 
         - name: Write updated inventory
           copy:
