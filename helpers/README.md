@@ -69,24 +69,25 @@ ansible all -i deploy/openshift-clusters/inventory.ini -m shell -a "./fencing_va
 
 ## Usage
 
-### Ansible Playbooks (Recommended)
+### Ansible Playbook (Recommended)
 
-The Ansible playbook provide automated installation and rebooting with proper orchestration.
+The Ansible playbook provides automated installation and rebooting with proper orchestration.
 
 #### Option 1: From Your Laptop
 
-Use `resource-agents-patch-remote.yml` with the automatically-generated inventory from the openshift-clusters deployment:
+Use with the automatically-generated inventory from the openshift-clusters deployment:
 
 ```bash
-# Ensure your inventory has cluster_vms group (automatically added by setup.yml playbook)
+# Target the cluster_vms group (automatically added by setup.yml playbook)
 ansible-playbook -i ../deploy/openshift-clusters/inventory.ini \
-  resource-agents-patch-remote.yml \
-  -e rpm_full_path=/absolute/path/to/package.rpm -l cluster_vms
+  resource-agents-patch.yml \
+  -l cluster_vms \
+  -e rpm_full_path=/absolute/path/to/package.rpm
 ```
 
 **Prerequisites:**
 - Inventory with `cluster_vms` group (created automatically by update-cluster-inventory.yml task)
-- ProxyJump SSH configuration through hypervisor
+- ProxyJump SSH configuration through hypervisor (automatically configured in inventory)
 - Absolute path to RPM file on your laptop
 
 **Process:**
@@ -98,7 +99,7 @@ ansible-playbook -i ../deploy/openshift-clusters/inventory.ini \
 
 #### Option 2: From the Hypervisor
 
-Use `resource-agents-patch.yml` directly on the hypervisor:
+Use with a custom inventory directly on the hypervisor:
 
 ```bash
 # On the hypervisor, create a simple inventory file first

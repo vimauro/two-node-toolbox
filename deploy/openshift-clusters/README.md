@@ -149,8 +149,8 @@ ansible cluster_vms -m ping -i inventory.ini
 # Run ad-hoc commands
 ansible cluster_vms -m shell -a "uptime" -i inventory.ini
 
-# Run playbooks targeting cluster VMs
-ansible-playbook my-cluster-playbook.yml -i inventory.ini
+# Run playbooks targeting cluster VMs (use -l cluster_vms to limit to automatically added VMs only)
+ansible-playbook my-cluster-playbook.yml -i inventory.ini -l cluster_vms
 ```
 
 The VMs are automatically accessible via SSH ProxyJump through the hypervisor, so you don't need direct network access to the cluster VMs.
