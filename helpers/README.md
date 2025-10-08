@@ -11,15 +11,15 @@ This directory contains multiple helper scripts for various OpenShift cluster op
 
 ## Requirements
 
+### For resource-agents-patch.yml (Recommended)
+- Ansible
+- Inventory file containing OpenShift cluster nodes (see `inventory_ocp_hosts.sample`, or use the automatically generated inventory from `../deploy/openshift-clusters/` - see [Direct VM Access](../deploy/openshift-clusters/README.md#direct-vm-access))
+- SSH access configured for `core` user
+
 ### For resource-agents-patch.sh
 - `oc` CLI tool (logged into OpenShift cluster)
 - `jq` for JSON processing
 - SSH access to cluster nodes
-
-### For resource-agents-patch.yml
-- Ansible
-- Inventory file containing OpenShift cluster nodes (separate from hypervisor deployment inventory, see `inventory_ocp_hosts.sample`)
-- SSH access configured for `core` user
 
 ## Available Scripts
 
@@ -34,7 +34,7 @@ Validates fencing configuration and health for two-node OpenShift clusters with 
 - IPv4/IPv6 support with automatic node discovery
 
 **Requirements:**
-- `oc` CLI tool (logged into OpenShift cluster) 
+- `oc` CLI tool (logged into OpenShift cluster)
 - For SSH transport: passwordless sudo access to cluster nodes
 - Two-node cluster with fencing topology
 
@@ -67,9 +67,63 @@ ansible all -i deploy/openshift-clusters/inventory.ini -m shell -a "./fencing_va
 
 **Note:** Disruptive testing functionality is not yet fully supported and should not be used in production environments.
 
+## Usage
+
+### Ansible Playbooks (Recommended)
+
+The Ansible playbook provide automated installation and rebooting with proper orchestration.
+
+#### Option 1: From Your Laptop
+
+Use `resource-agents-patch-remote.yml` with the automatically-generated inventory from the openshift-clusters deployment:
+
+```bash
+# Ensure your inventory has cluster_vms group (automatically added by setup.yml playbook)
+ansible-playbook -i ../deploy/openshift-clusters/inventory.ini \
+  resource-agents-patch-remote.yml \
+  -e rpm_full_path=/absolute/path/to/package.rpm -l cluster_vms
+```
+
+**Prerequisites:**
+- Inventory with `cluster_vms` group (created automatically by update-cluster-inventory.yml task)
+- ProxyJump SSH configuration through hypervisor
+- Absolute path to RPM file on your laptop
+
+**Process:**
+1. Validates RPM file exists on localhost
+2. Copies RPM to cluster VMs via ProxyJump
+3. Installs using rpm-ostree override with privilege escalation
+4. Reboots nodes one at a time
+5. Verifies etcd health after reboot
+
+#### Option 2: From the Hypervisor
+
+Use `resource-agents-patch.yml` directly on the hypervisor:
+
+```bash
+# On the hypervisor, create a simple inventory file first
+# See inventory_ocp_hosts.sample for reference
+ansible-playbook -i inventory_ocp_hosts \
+  resource-agents-patch.yml \
+  -e rpm_full_path=/path/to/package.rpm
+```
+
+**Prerequisites:**
+- Copy RPM file and resource-agents-patch.yml playbook to hypervisor
+- Create inventory file listing cluster VM IPs (see `inventory_ocp_hosts.sample`)
+
+**Process:**
+1. Validates RPM file existence
+2. Copies RPM to all nodes
+3. Installs using rpm-ostree override with privilege escalation
+4. Reboots nodes one at a time
+5. Verifies etcd health after reboot
+
 ### resource-agents-patch.sh
 
 Patches OpenShift cluster nodes with RPM packages using rpm-ostree override functionality.
+
+For environments where Ansible is not available:
 
 ```bash
 ./resource-agents-patch.sh /path/to/package.rpm
@@ -82,25 +136,12 @@ Patches OpenShift cluster nodes with RPM packages using rpm-ostree override func
 4. Installs package with `rpm-ostree override replace`
 5. Provides manual reboot commands
 
-### Ansible Playbook
-
-```bash
-ansible-playbook -i inventory_ocp_hosts resource-agents-patch.yml -e rpm_full_path=/path/to/package.rpm
-```
-
-**Note**: The inventory file should list the OpenShift cluster nodes (VMs), not the hypervisor host. Copy `inventory_ocp_hosts.sample` to `inventory_ocp_hosts` and update with your cluster node IPs.
-
-**Process:**
-1. Validates RPM file existence
-2. Copies RPM to all nodes
-3. Installs using rpm-ostree override
-4. Reboots nodes one at a time
-5. Verifies etcd health after reboot
+**Note:** The shell script does not handle reboots automatically. You must manually reboot nodes after installation. Follow the instructions provided at the end of the script execution
 
 ## Notes
 
 - Both tools use `rpm-ostree override replace` which is appropriate for updating existing packages
 - Node reboots are required to activate rpm-ostree changes
-- The Ansible playbook handles rebooting automatically; the shell script requires manual intervention
+- The Ansible playbooks handle rebooting automatically with proper orchestration; the shell script requires manual intervention
 - Plan reboots carefully to maintain cluster availability
 - Monitor cluster health during the patching process 
