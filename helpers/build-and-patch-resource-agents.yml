@@ -52,19 +52,17 @@
       dnf:
         name:
           - git
-          - make
-          - automake
           - autoconf
-          - pkgconfig
-          - rpm-build
+          - automake
           - docbook-style-xsl
-          - libxslt
           - glib2-devel
-          - systemd-devel
           - libqb-devel
-          - libuuid-devel
-          - libxml2-devel
-          - libxslt-devel
+          - make
+          - rpm-build
+          - perl
+          - python3-devel
+          - libnet-devel
+          - python3-pyroute2
         state: present
 
     - name: Remove existing build directory if present
@@ -102,9 +100,7 @@
 
     - name: Display build result
       debug:
-        msg: |
-          Build completed
-          Output: {{ build_result.stdout }}
+        msg: "RPM build completed successfully"
 
     - name: Verify RPM was created
       stat:
