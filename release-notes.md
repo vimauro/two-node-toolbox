@@ -18,7 +18,21 @@ ansible cluster_vms -m shell -a "uptime" -i inventory.ini
 ansible-playbook my-cluster-playbook.yml -i inventory.ini -l cluster_vms
 ```
 
+#### Resource Agents Build and Patch Automation
+- New `make patch-nodes` command for building and patching resource-agents on cluster nodes
+- Automated workflow: builds RPM on hypervisor, copies to localhost, patches all cluster nodes
+- Eliminates manual RPM building and distribution steps
+- Includes automated node reboots with etcd health verification
+
+**Usage:**
+```bash
+# From deploy/ directory
+make patch-nodes
+```
+
 ### Improvements
+
+
 
 #### Playbook Host Targeting Standardization
 - All playbooks now consistently use `metal_machine` host group
