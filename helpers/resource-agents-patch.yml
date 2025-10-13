@@ -1,6 +1,6 @@
 ---
 - name: Install RPM package on OpenShift nodes using rpm-ostree
-  hosts: all
+  hosts: "{{ target_hosts | default('all') }}"
   remote_user: core
   tasks:
     - name: Store RPM full path in a registry
