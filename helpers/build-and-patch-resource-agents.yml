@@ -1,0 +1,144 @@
+---
+- name: Build resource-agents RPM on hypervisor and patch cluster nodes
+  hosts: localhost
+  gather_facts: no
+  vars:
+    resource_agents_repo: "https://github.com/ClusterLabs/resource-agents"
+    resource_agents_version: "{{ rpm_version | default('4.11') }}"
+    build_dir: "/tmp/resource-agents-build"
+    rpm_dest_dir: "{{ playbook_dir }}"
+    inventory_file: "{{ playbook_dir }}/../deploy/openshift-clusters/inventory.ini"
+
+  tasks:
+    - name: Verify inventory.ini exists
+      stat:
+        path: "{{ inventory_file }}"
+      register: inv_file
+      failed_when: not inv_file.stat.exists
+
+    - name: Read inventory file to verify required groups
+      command: grep -E '^\[metal_machine\]|^\[cluster_vms\]' "{{ inventory_file }}"
+      register: inventory_groups
+      changed_when: false
+      failed_when: inventory_groups.rc != 0
+
+    - name: Verify both required groups exist in inventory
+      assert:
+        that:
+          - "'[metal_machine]' in inventory_groups.stdout"
+          - "'[cluster_vms]' in inventory_groups.stdout"
+        fail_msg: "Inventory file must contain both [metal_machine] and [cluster_vms] groups"
+        success_msg: "Inventory file contains all required groups"
+
+    - name: Display build information
+      debug:
+        msg: |
+          Building resource-agents RPM on hypervisor
+          Version: {{ resource_agents_version }}
+          Repository: {{ resource_agents_repo }}
+          Build directory: {{ build_dir }}
+
+- name: Build RPM on hypervisor
+  hosts: metal_machine
+  gather_facts: yes
+  vars:
+    resource_agents_repo: "https://github.com/ClusterLabs/resource-agents"
+    resource_agents_version: "{{ rpm_version | default('4.11') }}"
+    build_dir: "/tmp/resource-agents-build"
+
+  tasks:
+    - name: Install required build dependencies
+      become: yes
+      dnf:
+        name:
+          - git
+          - make
+          - automake
+          - autoconf
+          - pkgconfig
+          - rpm-build
+          - docbook-style-xsl
+          - libxslt
+          - glib2-devel
+          - systemd-devel
+          - libqb-devel
+          - libuuid-devel
+          - libxml2-devel
+          - libxslt-devel
+        state: present
+
+    - name: Remove existing build directory if present
+      file:
+        path: "{{ build_dir }}"
+        state: absent
+
+    - name: Clone resource-agents repository
+      git:
+        repo: "{{ resource_agents_repo }}"
+        dest: "{{ build_dir }}"
+        version: main
+        depth: 1
+
+    - name: Run autoreconf to generate configure script
+      command: autoreconf --install --force
+      args:
+        chdir: "{{ build_dir }}"
+      register: autoreconf_result
+
+    - name: Run configure to generate Makefile
+      command: ./configure
+      args:
+        chdir: "{{ build_dir }}"
+      register: configure_result
+
+    - name: Build resource-agents RPM
+      shell: |
+        set -euo pipefail
+        cd {{ build_dir }}
+        make rpm VERSION="{{ resource_agents_version }}"
+      args:
+        executable: /usr/bin/bash
+      register: build_result
+
+    - name: Display build result
+      debug:
+        msg: |
+          Build completed
+          Output: {{ build_result.stdout }}
+
+    - name: Verify RPM was created
+      stat:
+        path: "{{ build_dir }}/x86_64/resource-agents-{{ resource_agents_version }}-1.el9.x86_64.rpm"
+      register: rpm_file
+      failed_when: not rpm_file.stat.exists
+
+    - name: Fetch RPM back to localhost
+      fetch:
+        src: "{{ build_dir }}/x86_64/resource-agents-{{ resource_agents_version }}-1.el9.x86_64.rpm"
+        dest: "{{ rpm_dest_dir }}/resource-agents-{{ resource_agents_version }}-1.el9.x86_64.rpm"
+        flat: yes
+      vars:
+        rpm_dest_dir: "{{ hostvars['localhost']['playbook_dir'] }}"
+
+    - name: Display RPM location
+      debug:
+        msg: "RPM successfully built and copied to {{ rpm_dest_dir }}/resource-agents-{{ resource_agents_version }}-1.el9.x86_64.rpm"
+      vars:
+        rpm_dest_dir: "{{ hostvars['localhost']['playbook_dir'] }}"
+
+- name: Patch cluster nodes with new RPM
+  import_playbook: resource-agents-patch.yml
+  vars:
+    target_hosts: cluster_vms
+    rpm_full_path: "{{ playbook_dir }}/resource-agents-{{ rpm_version | default('4.11') }}-1.el9.x86_64.rpm"
+
+- name: Display completion message
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Show completion message
+      debug:
+        msg: |
+          Resource-agents build and patch complete!
+          RPM location: {{ playbook_dir }}/resource-agents-{{ rpm_version | default('4.11') }}-1.el9.x86_64.rpm
+          Cluster nodes have been patched and rebooted.

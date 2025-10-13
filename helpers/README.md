@@ -69,6 +69,45 @@ ansible all -i deploy/openshift-clusters/inventory.ini -m shell -a "./fencing_va
 
 ## Usage
 
+### Build and Patch in One Step (Easiest)
+
+The `build-and-patch-resource-agents.yml` playbook automates the entire workflow:
+1. Builds the resource-agents RPM on the hypervisor
+2. Copies the RPM back to your laptop
+3. Automatically calls `resource-agents-patch.yml` to patch cluster nodes
+
+#### Using Make (Simplest)
+
+```bash
+# From the deploy/ directory
+make patch-nodes
+
+#### Using Ansible Directly
+
+```bash
+# From the helpers/ directory
+ansible-playbook -i ../deploy/openshift-clusters/inventory.ini \
+  build-and-patch-resource-agents.yml \
+  -e rpm_version=4.11
+```
+
+**Prerequisites:**
+- Inventory file at `../deploy/openshift-clusters/inventory.ini` with both `metal_machine` and `cluster_vms` groups
+- SSH access to hypervisor (metal_machine)
+- ProxyJump SSH configuration for cluster VMs (automatically configured by setup.yml)
+
+**What it does:**
+1. Validates inventory contains both `[metal_machine]` and `[cluster_vms]` groups
+2. Installs build dependencies on hypervisor
+3. Clones resource-agents repository on hypervisor
+4. Builds RPM using `make rpm VERSION=<version>`
+5. Fetches RPM back to helpers/ directory
+6. Automatically patches cluster_vms group with the new RPM
+7. Reboots cluster nodes one at a time with etcd health verification
+
+**Variables:**
+- `rpm_version`: Version string for the RPM (default: 4.11)
+
 ### Ansible Playbook (Recommended)
 
 The Ansible playbook provides automated installation and rebooting with proper orchestration.
