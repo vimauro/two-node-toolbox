@@ -15,7 +15,7 @@
 ```bash
 ansible cluster_vms -m ping -i inventory.ini
 ansible cluster_vms -m shell -a "uptime" -i inventory.ini
-ansible-playbook my-cluster-playbook.yml -i inventory.ini
+ansible-playbook my-cluster-playbook.yml -i inventory.ini -l cluster_vms
 ```
 
 ### Improvements
