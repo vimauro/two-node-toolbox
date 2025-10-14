@@ -105,7 +105,10 @@
     - name: Search for built RPM
       find:
         paths: "{{ build_dir }}"
-        patterns: "*.rpm"
+        patterns: "resource-agents-*.rpm"
+        excludes:
+          - "*debug*"
+          - "*.src.rpm"
         recurse: yes
       register: rpm_search
 
@@ -113,8 +116,8 @@
       assert:
         that:
           - rpm_search.files | length > 0
-        fail_msg: "No RPM files found in {{ build_dir }}"
-        success_msg: "Found {{ rpm_search.files | length }} RPM file(s)"
+        fail_msg: "No resource-agents RPM found in {{ build_dir }}"
+        success_msg: "Found {{ rpm_search.files | length }} resource-agents RPM file(s)"
 
     - name: Set RPM path fact
       set_fact:
