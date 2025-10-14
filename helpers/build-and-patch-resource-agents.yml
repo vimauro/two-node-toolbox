@@ -3,8 +3,9 @@
   hosts: localhost
   gather_facts: no
   vars:
-    resource_agents_repo: "https://github.com/ClusterLabs/resource-agents"
+    resource_agents_repo: "{{ repo_url | default('https://github.com/ClusterLabs/resource-agents') }}"
     resource_agents_version: "{{ rpm_version | default('4.11') }}"
+    resource_agents_branch: "{{ rpm_branch | default('main') }}"
     build_dir: "/tmp/resource-agents-build"
     rpm_dest_dir: "{{ playbook_dir }}"
     inventory_file: "{{ playbook_dir }}/../deploy/openshift-clusters/inventory.ini"
@@ -35,6 +36,7 @@
         msg: |
           Building resource-agents RPM on hypervisor
           Version: {{ resource_agents_version }}
+          Branch: {{ resource_agents_branch }}
           Repository: {{ resource_agents_repo }}
           Build directory: {{ build_dir }}
 
@@ -42,8 +44,9 @@
   hosts: metal_machine
   gather_facts: yes
   vars:
-    resource_agents_repo: "https://github.com/ClusterLabs/resource-agents"
+    resource_agents_repo: "{{ repo_url | default('https://github.com/ClusterLabs/resource-agents') }}"
     resource_agents_version: "{{ rpm_version | default('4.11') }}"
+    resource_agents_branch: "{{ rpm_branch | default('main') }}"
     build_dir: "/tmp/resource-agents-build"
 
   tasks:
@@ -74,7 +77,7 @@
       git:
         repo: "{{ resource_agents_repo }}"
         dest: "{{ build_dir }}"
-        version: main
+        version: "{{ resource_agents_branch }}"
         depth: 1
 
     - name: Run autoreconf to generate configure script
