@@ -5,7 +5,7 @@
 
 - name: Get cluster VM names
   shell: |
-    sudo virsh list --name | grep "^{{ test_cluster_name }}"
+    virsh -c qemu:///system list --name | grep "^{{ test_cluster_name }}"
   register: cluster_vms
   changed_when: false
   failed_when: false
@@ -20,14 +20,14 @@
     - name: Get VM IP addresses from DHCP leases
       shell: |
         # Get all network/MAC pairs for this VM
-        INTERFACES=$(sudo virsh domiflist "{{ item }}" | awk 'NR>2 && $3 != "" && $5 != "" {print $3, $5}')
+        INTERFACES=$(virsh -c qemu:///system domiflist "{{ item }}" | awk 'NR>2 && $3 != "" && $5 != "" {print $3, $5}')
 
         # Try each interface until we find an IP
         while IFS= read -r line; do
           NETWORK=$(echo "$line" | awk '{print $1}')
           MAC=$(echo "$line" | awk '{print $2}')
 
-          IP=$(sudo virsh net-dhcp-leases "$NETWORK" 2>/dev/null | grep -i "$MAC" | awk '{print $5}' | cut -d'/' -f1)
+          IP=$(virsh -c qemu:///system net-dhcp-leases "$NETWORK" 2>/dev/null | grep -i "$MAC" | awk '{print $5}' | cut -d'/' -f1)
 
           if [ -n "$IP" ]; then
             echo "$IP"
