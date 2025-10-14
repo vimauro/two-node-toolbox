@@ -102,23 +102,36 @@
       debug:
         msg: "RPM build completed successfully"
 
+    - name: Search for built RPM
+      find:
+        paths: "{{ build_dir }}"
+        patterns: "*.rpm"
+        recurse: yes
+      register: rpm_search
+
     - name: Verify RPM was created
-      stat:
-        path: "{{ build_dir }}/x86_64/resource-agents-{{ resource_agents_version }}-1.el9.x86_64.rpm"
-      register: rpm_file
-      failed_when: not rpm_file.stat.exists
+      assert:
+        that:
+          - rpm_search.files | length > 0
+        fail_msg: "No RPM files found in {{ build_dir }}"
+        success_msg: "Found {{ rpm_search.files | length }} RPM file(s)"
+
+    - name: Set RPM path fact
+      set_fact:
+        rpm_path: "{{ rpm_search.files[0].path }}"
+        rpm_filename: "{{ rpm_search.files[0].path | basename }}"
 
     - name: Fetch RPM back to localhost
       fetch:
-        src: "{{ build_dir }}/x86_64/resource-agents-{{ resource_agents_version }}-1.el9.x86_64.rpm"
-        dest: "{{ rpm_dest_dir }}/resource-agents-{{ resource_agents_version }}-1.el9.x86_64.rpm"
+        src: "{{ rpm_path }}"
+        dest: "{{ rpm_dest_dir }}/{{ rpm_filename }}"
         flat: yes
       vars:
         rpm_dest_dir: "{{ hostvars['localhost']['playbook_dir'] }}"
 
     - name: Display RPM location
       debug:
-        msg: "RPM successfully built and copied to {{ rpm_dest_dir }}/resource-agents-{{ resource_agents_version }}-1.el9.x86_64.rpm"
+        msg: "RPM successfully built and copied to {{ rpm_dest_dir }}/{{ rpm_filename }}"
       vars:
         rpm_dest_dir: "{{ hostvars['localhost']['playbook_dir'] }}"
 
@@ -126,7 +139,7 @@
   import_playbook: resource-agents-patch.yml
   vars:
     target_hosts: cluster_vms
-    rpm_full_path: "{{ playbook_dir }}/resource-agents-{{ rpm_version | default('4.11') }}-1.el9.x86_64.rpm"
+    rpm_full_path: "{{ playbook_dir }}/{{ hostvars[groups['metal_machine'][0]]['rpm_filename'] }}"
 
 - name: Display completion message
   hosts: localhost
@@ -136,5 +149,5 @@
       debug:
         msg: |
           Resource-agents build and patch complete!
-          RPM location: {{ playbook_dir }}/resource-agents-{{ rpm_version | default('4.11') }}-1.el9.x86_64.rpm
+          RPM location: {{ playbook_dir }}/{{ hostvars[groups['metal_machine'][0]]['rpm_filename'] }}
           Cluster nodes have been patched and rebooted.
