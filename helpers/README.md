@@ -4,26 +4,29 @@ Utilities for OpenShift cluster operations including package management and clus
 
 ## Description
 
-This directory contains multiple helper scripts for various OpenShift cluster operations:
+This directory contains multiple helper tools for various OpenShift cluster operations:
 
-- **Resource Agent Patching**: Scripts and playbooks for installing RPM packages on cluster nodes using rpm-ostree's override functionality
+- **Resource Agent Patching**: Scripts and playbooks (recommended usage) for installing RPM packages on cluster nodes using rpm-ostree's override functionality
 - **Fencing Validation**: Tools for validating two-node cluster fencing configuration and health
 
 ## Requirements
 
-### For resource-agents-patch.yml (Recommended)
-- Ansible
-- Inventory file containing OpenShift cluster nodes (see `inventory_ocp_hosts.sample`, or use the automatically generated inventory from `../deploy/openshift-clusters/` - see [Direct VM Access](../deploy/openshift-clusters/README.md#direct-vm-access))
-- SSH access configured for `core` user
+### For build-and-patch-resource-agents.yml and apply-rpm-patch.yml 
+- Ansible playbooks. See below for specific prerequisites for each
 
-### For resource-agents-patch.sh
+### For apply-rpm-patch.sh
 - `oc` CLI tool (logged into OpenShift cluster)
 - `jq` for JSON processing
 - SSH access to cluster nodes
 
-## Available Scripts
+### For fencing_validator.sh
+- `oc` CLI tool (logged into OpenShift cluster)
+- For SSH transport: passwordless sudo access to cluster nodes
+- Two-node cluster with fencing topology
 
-### fencing_validator.sh
+## Available Tools
+
+### Fencing Validator
 
 Validates fencing configuration and health for two-node OpenShift clusters with STONITH-enabled Pacemaker.
 
@@ -33,10 +36,7 @@ Validates fencing configuration and health for two-node OpenShift clusters with 
 - Multiple transport methods: Auto-detection, SSH, or oc debug
 - IPv4/IPv6 support with automatic node discovery
 
-**Requirements:**
-- `oc` CLI tool (logged into OpenShift cluster)
-- For SSH transport: passwordless sudo access to cluster nodes
-- Two-node cluster with fencing topology
+
 
 **Usage:**
 
@@ -67,28 +67,41 @@ ansible all -i deploy/openshift-clusters/inventory.ini -m shell -a "./fencing_va
 
 **Note:** Disruptive testing functionality is not yet fully supported and should not be used in production environments.
 
-## Usage
 
-### Build and Patch in One Step (Easiest)
+### Resource Agents Patching
 
 The `build-and-patch-resource-agents.yml` playbook automates the entire workflow:
 1. Builds the resource-agents RPM on the hypervisor
 2. Copies the RPM back to your laptop
-3. Automatically calls `resource-agents-patch.yml` to patch cluster nodes
+3. Automatically calls `apply-rpm-patch.yml` to patch cluster nodes
 
-#### Using Make (Simplest)
+#### Usage
 
 ```bash
 # From the deploy/ directory
+# Simplest, no customization. Uses resource-agents repo, main branch, auto sets next version
 make patch-nodes
 
 #### Using Ansible Directly
 
 ```bash
 # From the helpers/ directory
+
+# Use defaults (ClusterLabs repo, main branch, version 4.11)
+ansible-playbook -i ../deploy/openshift-clusters/inventory.ini \
+  build-and-patch-resource-agents.yml
+
+# Specify custom version
 ansible-playbook -i ../deploy/openshift-clusters/inventory.ini \
   build-and-patch-resource-agents.yml \
-  -e rpm_version=4.11
+  -e rpm_version=4.12
+
+# Use custom repository and branch
+ansible-playbook -i ../deploy/openshift-clusters/inventory.ini \
+  build-and-patch-resource-agents.yml \
+  -e repo_url=https://github.com/myorg/resource-agents \
+  -e rpm_branch=my-feature-branch \
+  -e rpm_version=5.0
 ```
 
 **Prerequisites:**
@@ -106,20 +119,22 @@ ansible-playbook -i ../deploy/openshift-clusters/inventory.ini \
 7. Reboots cluster nodes one at a time with etcd health verification
 
 **Variables:**
-- `rpm_version`: Version string for the RPM (default: 4.11)
+- `repo_url`: Git repository URL (default: `https://github.com/ClusterLabs/resource-agents`)
+- `rpm_branch`: Git branch to checkout (default: `main`)
+- `rpm_version`: Version string for the RPM (default: `4.11`)
 
-### Ansible Playbook (Recommended)
+### apply-rpm-patch.yml playbook
 
-The Ansible playbook provides automated installation and rebooting with proper orchestration.
+If the RPM to be installed is already available to you, this Ansible playbook provides automated installation and rebooting with proper orchestration.
 
 #### Option 1: From Your Laptop
 
 Use with the automatically-generated inventory from the openshift-clusters deployment:
 
 ```bash
-# Target the cluster_vms group (automatically added by setup.yml playbook)
-ansible-playbook -i ../deploy/openshift-clusters/inventory.ini \
-  resource-agents-patch.yml \
+# Target the cluster_vms group
+ansible-playbook -i /path/to/inventory.ini \
+  apply-rpm-patch.yml \
   -l cluster_vms \
   -e rpm_full_path=/absolute/path/to/package.rpm
 ```
@@ -144,12 +159,12 @@ Use with a custom inventory directly on the hypervisor:
 # On the hypervisor, create a simple inventory file first
 # See inventory_ocp_hosts.sample for reference
 ansible-playbook -i inventory_ocp_hosts \
-  resource-agents-patch.yml \
+  apply-rpm-patch.yml \
   -e rpm_full_path=/path/to/package.rpm
 ```
 
 **Prerequisites:**
-- Copy RPM file and resource-agents-patch.yml playbook to hypervisor
+- Copy RPM file and apply-rpm-patch.yml playbook to hypervisor
 - Create inventory file listing cluster VM IPs (see `inventory_ocp_hosts.sample`)
 
 **Process:**
@@ -159,14 +174,14 @@ ansible-playbook -i inventory_ocp_hosts \
 4. Reboots nodes one at a time
 5. Verifies etcd health after reboot
 
-### resource-agents-patch.sh
+### apply-rpm-patch.sh (not recommended)
 
-Patches OpenShift cluster nodes with RPM packages using rpm-ostree override functionality.
+If you don't want or are unable to use the previous Ansible playbooks, you can use this shell script .It should be inoked from within the hypervisor, as it requires direct access to the nodes via SSH and assumes the "core" user.
 
-For environments where Ansible is not available:
+#### Usage
 
 ```bash
-./resource-agents-patch.sh /path/to/package.rpm
+./apply-rpm-patch.sh /path/to/package.rpm
 ```
 
 **Process:**

@@ -226,8 +226,8 @@ make deploy
 ### New Tools
 
 #### Helper Scripts
-- `helpers/resource-agents-patch.sh` - Shell script for installing RPM packages on all cluster nodes using rpm-ostree
-- `helpers/resource-agents-patch.yml` - Ansible playbook alternative for RPM installation
+- `helpers/apply-rpm-patch.sh` - Shell script for installing RPM packages on all cluster nodes using rpm-ostree
+- `helpers/apply-rpm-patch.yml` - Ansible playbook alternative for RPM installation
 
 ### Documentation
 - Added `helpers/README.md` with usage instructions for both approaches

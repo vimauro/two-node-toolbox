@@ -142,7 +142,7 @@
         rpm_dest_dir: "{{ hostvars['localhost']['playbook_dir'] }}"
 
 - name: Patch cluster nodes with new RPM
-  import_playbook: resource-agents-patch.yml
+  import_playbook: apply-rpm-patch.yml
   vars:
     target_hosts: cluster_vms
     rpm_full_path: "{{ playbook_dir }}/{{ hostvars[groups['metal_machine'][0]]['rpm_filename'] }}"
