@@ -22,7 +22,7 @@ echo "Collecting pacemaker and etcd logs from cluster nodes..."
 cd "${DEPLOY_DIR}/openshift-clusters"
 
 # Run the log collection playbook
-if ansible-playbook ../helpers/collect-tnf-logs.yml -i inventory.ini; then
+if ansible-playbook ../../helpers/collect-tnf-logs.yml -i inventory.ini; then
     echo ""
     # Get the most recent logs directory
     LATEST_LOG_DIR=$(ls -t "${DEPLOY_DIR}/logs" 2>/dev/null | head -1)
