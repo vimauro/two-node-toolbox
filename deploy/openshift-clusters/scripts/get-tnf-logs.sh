@@ -4,6 +4,8 @@
 SCRIPT_DIR=$(dirname "$0")
 # Get the deploy directory (two levels up from scripts)
 DEPLOY_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+# Get the repository root directory (one level up from deploy)
+REPO_ROOT="$(cd "${DEPLOY_DIR}/.." && pwd)"
 
 set -o nounset
 set -o errexit
@@ -24,12 +26,12 @@ cd "${DEPLOY_DIR}/openshift-clusters"
 # Run the log collection playbook
 if ansible-playbook ../../helpers/collect-tnf-logs.yml -i inventory.ini; then
     echo ""
-    # Get the most recent logs directory
-    LATEST_LOG_DIR=$(ls -t "${DEPLOY_DIR}/logs" 2>/dev/null | head -1)
+    # Get the most recent logs directory from repository root
+    LATEST_LOG_DIR=$(ls -t "${REPO_ROOT}/logs" 2>/dev/null | head -1)
     if [[ -n "${LATEST_LOG_DIR}" ]]; then
         echo "✓ Logs collected successfully!"
         echo ""
-        echo "Logs location: ${DEPLOY_DIR}/logs/${LATEST_LOG_DIR}"
+        echo "Logs location: ${REPO_ROOT}/logs/${LATEST_LOG_DIR}"
     else
         echo "✓ Log collection completed, but could not determine logs directory"
     fi
