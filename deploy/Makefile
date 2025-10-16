@@ -54,6 +54,8 @@ arbiter-agent:
 
 patch-nodes:
 	@./openshift-clusters/scripts/patch-nodes.sh
+get-tnf-logs:
+	@./openshift-clusters/scripts/get-tnf-logs.sh
 
 help:
 	@echo "Available commands:"
@@ -75,11 +77,14 @@ help:
 	@echo "OpenShift Cluster Management:"
 	@echo "  fencing-ipi          - Deploy fencing IPI cluster (non-interactive)"
 	@echo "  arbiter-ipi          - Deploy arbiter IPI cluster (non-interactive)"
-	@echo "  arbiter-agent          - Deploy arbiter Agent cluster (non-interactive)"
+	@echo "  arbiter-agent        - Deploy arbiter Agent cluster (non-interactive)"
 	@echo "  redeploy-cluster     - Redeploy OpenShift cluster using dev-scripts make redeploy"
 	@echo "  shutdown-cluster     - Shutdown OpenShift cluster VMs in orderly fashion"
 	@echo "  startup-cluster      - Start up OpenShift cluster VMs and proxy container"
 	@echo "  clean                - Clean OpenShift cluster using dev-scripts clean target"
 	@echo "  full-clean           - Fully clean instance cache and OpenShift cluster using dev-scripts realclean target"
 	@echo "  patch-nodes          - Build resource-agents RPM and patch cluster nodes (default version: 4.11)"
+	@echo ""
+	@echo "Cluster Utilities:"
+	@echo "  get-tnf-logs         - Collect pacemaker and etcd logs from cluster nodes"
 
