@@ -11,3 +11,4 @@ deploy/openshift-clusters/roles/kcli/kcli-install/defaults/main.yml
 kcli
 kcli/*
 deploy/openshift-clusters/inventory.ini.*
+logs/*
