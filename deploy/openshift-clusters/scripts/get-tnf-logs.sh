@@ -11,6 +11,26 @@ set -o nounset
 set -o errexit
 set -o pipefail
 
+# Parse optional boot parameter (default: -1 for current boot only)
+JOURNALCTL_BOOTS="${1:--1}"
+
+# Validate boots parameter is a number
+if ! [[ "$JOURNALCTL_BOOTS" =~ ^-?[0-9]+$ ]]; then
+    echo "Usage: $0 [journalctl_boots]"
+    echo ""
+    echo "Arguments:"
+    echo "  journalctl_boots - Number of boots to collect (default: -1)"
+    echo "                     -1: Current boot only (default)"
+    echo "                      0: All boots"
+    echo "                      N: Specific number of most recent boots"
+    echo ""
+    echo "Examples:"
+    echo "  $0        # Collect logs from current boot only"
+    echo "  $0 0      # Collect logs from all boots"
+    echo "  $0 -2     # Collect logs from previous boot"
+    exit 1
+fi
+
 # Check if inventory.ini exists in the openshift-clusters directory
 if [[ ! -f "${DEPLOY_DIR}/openshift-clusters/inventory.ini" ]]; then
     echo "Error: inventory.ini not found in ${DEPLOY_DIR}/openshift-clusters/"
@@ -18,13 +38,19 @@ if [[ ! -f "${DEPLOY_DIR}/openshift-clusters/inventory.ini" ]]; then
     exit 1
 fi
 
-echo "Collecting pacemaker and etcd logs from cluster nodes..."
+if [[ "$JOURNALCTL_BOOTS" == "-1" ]]; then
+    echo "Collecting pacemaker and etcd logs from cluster nodes (current boot only)..."
+elif [[ "$JOURNALCTL_BOOTS" == "0" ]]; then
+    echo "Collecting pacemaker and etcd logs from cluster nodes (all boots)..."
+else
+    echo "Collecting pacemaker and etcd logs from cluster nodes (boot offset: $JOURNALCTL_BOOTS)..."
+fi
 
 # Navigate to the openshift-clusters directory and run the log collection playbook
 cd "${DEPLOY_DIR}/openshift-clusters"
 
-# Run the log collection playbook
-if ansible-playbook ../../helpers/collect-tnf-logs.yml -i inventory.ini; then
+# Run the log collection playbook with boot parameter
+if ansible-playbook ../../helpers/collect-tnf-logs.yml -i inventory.ini -e "journalctl_boots=${JOURNALCTL_BOOTS}"; then
     echo ""
     # Get the most recent logs directory from repository root
     LATEST_LOG_DIR=$(ls -t "${REPO_ROOT}/logs" 2>/dev/null | head -1)

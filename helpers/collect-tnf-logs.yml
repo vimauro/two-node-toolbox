@@ -3,6 +3,12 @@
   hosts: cluster_vms
   remote_user: core
   gather_facts: yes
+
+  vars:
+    # Number of boots to collect journalctl logs from (default: -1 for current boot only)
+    # Use 0 for all boots, or specific number for that many most recent boots
+    journalctl_boots: 0
+
   tasks:
     - name: Set timestamp for log collection
       set_fact:
@@ -27,7 +33,7 @@
       delegate_to: localhost
 
     - name: Collect pacemaker journalctl logs
-      shell: journalctl -u pacemaker --no-pager
+      shell: journalctl -u pacemaker --no-pager -b {{ journalctl_boots }}
       register: pacemaker_logs
       become: yes
       failed_when: false
