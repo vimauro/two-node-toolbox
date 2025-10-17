@@ -57,6 +57,8 @@
       delegate_to: localhost
       run_once: true
       when:
+        - topology == "fencing"
+        - interactive_mode is not defined or interactive_mode | bool
         - redfish_prompt_result is defined
         - redfish_prompt_result.user_input | default('') | lower not in ['y', 'yes']
 
