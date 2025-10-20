@@ -46,6 +46,9 @@ inventory:
 fencing-ipi:
 	@./openshift-clusters/scripts/deploy-fencing-ipi.sh
 
+fencing-agent:
+	@./openshift-clusters/scripts/deploy-fencing-agent.sh
+
 arbiter-ipi:
 	@./openshift-clusters/scripts/deploy-arbiter-ipi.sh
 
@@ -71,8 +74,9 @@ help:
 	@echo ""
 	@echo "OpenShift Cluster Management:"
 	@echo "  fencing-ipi          - Deploy fencing IPI cluster (non-interactive)"
+	@echo "  fencing-agent        - Deploy fencing Agent cluster (non-interactive) (WIP Experimental)"
 	@echo "  arbiter-ipi          - Deploy arbiter IPI cluster (non-interactive)"
-	@echo "  arbiter-agent          - Deploy arbiter Agent cluster (non-interactive)"
+	@echo "  arbiter-agent        - Deploy arbiter Agent cluster (non-interactive)"
 	@echo "  redeploy-cluster     - Redeploy OpenShift cluster using dev-scripts make redeploy"
 	@echo "  shutdown-cluster     - Shutdown OpenShift cluster VMs in orderly fashion"
 	@echo "  startup-cluster      - Start up OpenShift cluster VMs and proxy container"

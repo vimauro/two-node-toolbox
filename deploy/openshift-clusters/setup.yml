@@ -39,13 +39,13 @@
       register: prompt_result_method
       delegate_to: localhost
       run_once: true
-      when: (interactive_mode is not defined or interactive_mode | bool) and (prompt_result.user_input == 'arbiter')
+      when: (interactive_mode is not defined or interactive_mode | bool)
 
     - name: Validate method selection
       assert:
         that: ( prompt_result_method.user_input in supported_methods )
         fail_msg: "Unsupported value, please select one of ({{ supported_methods_pretty_print }})."
-      when: (interactive_mode is not defined or interactive_mode | bool) and prompt_result_method and prompt_result.user_input == 'arbiter'
+      when: (interactive_mode is not defined or interactive_mode | bool)
 
     # Default 'method' if not interactive
     - name: Set the method fact
