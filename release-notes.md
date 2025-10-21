@@ -30,6 +30,15 @@ ansible-playbook my-cluster-playbook.yml -i inventory.ini -l cluster_vms
 make patch-nodes
 ```
 
+#### Cluster Log Collection
+- New `make get-tnf-logs` command for collecting etcd related logs from cluster VMs
+
+**Usage:**
+```bash
+# From deploy/ directory
+make get-tnf-logs
+```
+
 ### Improvements
 
 
