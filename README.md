@@ -22,6 +22,7 @@ make deploy fencing-ipi    # Two-Node with Fencing (IPI method)
 make ssh                   # SSH into hypervisor
 make info                  # Display instance information
 make clean                 # Clean OpenShift cluster
+make get-tnf-logs          # Collect cluster logs from VMs for TNF clusters. Needs VMs in inventory
 ```
 
 See [deploy/aws-hypervisor/README.md](deploy/aws-hypervisor/README.md) for setup instructions and configuration.

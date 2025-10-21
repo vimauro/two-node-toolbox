@@ -243,6 +243,16 @@ $ make clean
 $ make arbiter-ipi #(for example)
 ```
 
+### Cluster Utilities
+
+```bash
+# Build resource-agents RPM and patch all cluster nodes
+$ make patch-nodes
+
+# Collect cluster logs from all VMs
+$ make get-tnf-logs
+```
+
 ## Troubleshooting Cluster Management
 
 If cluster startup fails:

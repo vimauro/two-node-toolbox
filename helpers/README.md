@@ -26,6 +26,28 @@ This directory contains multiple helper tools for various OpenShift cluster oper
 
 ## Available Tools
 
+### Log Collection
+
+Collects etcd related logs from cluster VMs
+
+**Usage:**
+
+*From deploy/ directory (recommended):*
+```bash
+make get-tnf-logs
+```
+
+*Using Ansible directly:*
+```bash
+# From helpers/ directory
+ansible-playbook -i ../deploy/openshift-clusters/inventory.ini collect-tnf-logs.yml
+```
+
+**Prerequisites:**
+- Inventory file with `cluster_vms` group
+- SSH access to cluster VMs via ProxyJump
+- `oc` CLI tool on cluster nodes
+
 ### Fencing Validator
 
 Validates fencing configuration and health for two-node OpenShift clusters with STONITH-enabled Pacemaker.
