@@ -14,7 +14,9 @@ The kcli deployment method automates OpenShift two-node cluster creation using *
 - Remote machine requirements (RHEL 9, 64GB RAM, etc.)
 - Optional AWS hypervisor setup
 
-The same prerequisites apply whether using dev-scripts or kcli deployment methods. If you're using a baremetal server not provisioned through the aws-hypervisor directory, please see the appropiate [README](README-external-host.md) to know how to run the init-host.yml playbook
+The same prerequisites apply whether using dev-scripts or kcli deployment methods. If you're using a baremetal server not provisioned through the aws-hypervisor directory, please see the appropiate [README](README-external-host.md) to know how to run the init-host.yml playbook.
+
+**Tip**: To skip the `-i inventory.ini` argument in all ansible commands, copy the inventory file to Ansible's default location (`/etc/ansible/hosts` on Linux, may vary on other operating systems).
 
 ## 2. Prerequisites
 

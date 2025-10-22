@@ -42,6 +42,8 @@ ansible_become_password=""
 
 **Important**: Replace `your-host-ip` with the actual IP address or hostname of your RHEL system.
 
+**Tip**: To skip the `-i inventory.ini` argument in all ansible commands, copy the inventory file to Ansible's default location (`/etc/ansible/hosts` on Linux, may vary on other operating systems).
+
 ### 2. Configure RHSM Credentials
 
 You have several options for providing Red Hat subscription credentials:
