@@ -11,22 +11,22 @@ set -o nounset
 set -o errexit
 set -o pipefail
 
-# Parse optional boot parameter (default: -1 for current boot only)
-JOURNALCTL_BOOTS="${1:--1}"
+# Parse optional boot parameter (default: 0 for all boots)
+JOURNALCTL_BOOTS="${1:-0}"
 
 # Validate boots parameter is a number
 if ! [[ "$JOURNALCTL_BOOTS" =~ ^-?[0-9]+$ ]]; then
     echo "Usage: $0 [journalctl_boots]"
     echo ""
     echo "Arguments:"
-    echo "  journalctl_boots - Number of boots to collect (default: -1)"
-    echo "                     -1: Current boot only (default)"
-    echo "                      0: All boots"
+    echo "  journalctl_boots - Number of boots to collect (default: 0)"
+    echo "                      0: All boots (default)"
+    echo "                     -1: Current boot only"
     echo "                      N: Specific number of most recent boots"
     echo ""
     echo "Examples:"
-    echo "  $0        # Collect logs from current boot only"
-    echo "  $0 0      # Collect logs from all boots"
+    echo "  $0        # Collect logs from all boots"
+    echo "  $0 -1     # Collect logs from current boot only"
     echo "  $0 -2     # Collect logs from previous boot"
     exit 1
 fi
