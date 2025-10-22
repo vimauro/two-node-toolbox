@@ -18,14 +18,16 @@ make deploy arbiter-ipi    # Two-Node with Arbiter (IPI method)
 make deploy arbiter-agent  # Two-Node with Arbiter (Agent method)
 make deploy fencing-ipi    # Two-Node with Fencing (IPI method)
 
-# Other useful commands (run `make help` for full list)
+# Other useful commands
 make ssh                   # SSH into hypervisor
 make info                  # Display instance information
 make clean                 # Clean OpenShift cluster
-make get-tnf-logs          # Collect cluster logs from VMs for TNF clusters. Needs VMs in inventory
+make get-tnf-logs          # Collect cluster logs from VMs
+make patch-nodes           # Build and patch resource-agents RPM
+make help                  # Show all available commands
 ```
 
-See [deploy/aws-hypervisor/README.md](deploy/aws-hypervisor/README.md) for setup instructions and configuration.
+See [deploy/README.md](deploy/README.md) for complete command reference and [deploy/aws-hypervisor/README.md](deploy/aws-hypervisor/README.md) for AWS setup instructions.
 
 ### Option 2: Bring Your Own Server
 
