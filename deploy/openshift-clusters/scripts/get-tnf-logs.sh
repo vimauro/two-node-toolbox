@@ -53,7 +53,7 @@ cd "${DEPLOY_DIR}/openshift-clusters"
 if ansible-playbook ../../helpers/collect-tnf-logs.yml -i inventory.ini -e "journalctl_boots=${JOURNALCTL_BOOTS}"; then
     echo ""
     # Get the most recent logs directory from repository root
-    LATEST_LOG_DIR=$(ls -t "${REPO_ROOT}/logs" 2>/dev/null | head -1)
+    LATEST_LOG_DIR=$(find "${REPO_ROOT}/logs" -maxdepth 1 -type d -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2- | xargs basename 2>/dev/null)
     if [[ -n "${LATEST_LOG_DIR}" ]]; then
         echo "✓ Logs collected successfully!"
         echo ""
