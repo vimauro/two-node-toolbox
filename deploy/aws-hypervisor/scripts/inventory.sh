@@ -36,12 +36,13 @@ echo "  IP:   ${PUBLIC_IP}"
 function update_config() {
     local inventory_file="$1"
     HOST_ENTRY="${SSH_USER}@${PUBLIC_IP} ansible_ssh_extra_args=\"-o ServerAliveInterval=30 -o ServerAliveCountMax=120\""
-    
+
     python3 -c "
 import configparser
 
-# ConfigParser with specific settings for Ansible inventory format
-config = configparser.ConfigParser(allow_no_value=True, delimiters=('=',))
+# ConfigParser with colon as delimiter to avoid conflicts with = in host entries
+# This allows host entries with = in them to work with Python 3.14's stricter validation
+config = configparser.ConfigParser(allow_no_value=True, delimiters=(':',))
 config.optionxform = str  # Preserve case sensitivity
 config.read('$inventory_file')
 
