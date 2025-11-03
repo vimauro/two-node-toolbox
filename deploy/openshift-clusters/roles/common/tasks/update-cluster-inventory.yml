@@ -144,11 +144,7 @@
 
               [cluster_vms]
               {% for entry in parsed_vm_entries %}
-              {% if ':' in entry.ip %}
               {{ entry.name }} ansible_host='{{ entry.ip }}'
-              {% else %}
-              {{ entry.name }} ansible_host={{ entry.ip }}
-              {% endif %}
               {% endfor %}
 
               [cluster_vms:vars]
