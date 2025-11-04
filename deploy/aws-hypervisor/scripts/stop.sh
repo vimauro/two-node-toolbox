@@ -67,7 +67,7 @@ if [[ "${INSTANCE_STATE}" == "running" ]]; then
         
         # Check if there are running dev-scripts deployments
         set +e  # Allow commands to fail
-        ssh -o ConnectTimeout=10 "$(cat "${SCRIPT_DIR}/../${SHARED_DIR}/ssh_user)@${HOST_PUBLIC_IP}")" "test -d ~/openshift-metal3" 2>/dev/null
+        ssh -o ConnectTimeout=10 "$(cat "${SCRIPT_DIR}/../${SHARED_DIR}/ssh_user")@${HOST_PUBLIC_IP}" "test -d ~/openshift-metal3" 2>/dev/null
         DEV_SCRIPTS_EXISTS=$?
         set -e
         
