@@ -1,3 +1,21 @@
+- name: Check if instance.env exists
+  stat:
+    path: "{{ playbook_dir }}/../aws-hypervisor/instance.env"
+  register: instance_env_file
+  delegate_to: localhost
+  become: false
+- name: Load SSH_PUBLIC_KEY from instance.env if it exists
+  shell: |
+    source {{ playbook_dir }}/../aws-hypervisor/instance.env
+    echo "${SSH_PUBLIC_KEY}"
+  register: ssh_key_from_env
+  delegate_to: localhost
+  become: false
+  when: instance_env_file.stat.exists
+  changed_when: false
+- name: Determine SSH public key path
+  set_fact:
+    ssh_public_key_path: "{{ ssh_key_from_env.stdout | default('~/.ssh/id_ed25519.pub', true) }}"
 - name: Get username
   command: whoami
   register: whoami
@@ -7,7 +25,7 @@
 - name: Install SSH key
   authorized_key:
     user: "{{whoami.stdout}}"
-    key: "{{ lookup('file', '~/.ssh/id_ed25519.pub') }}"
+    key: "{{ lookup('file', ssh_public_key_path) }}"
 - name: Install inputrc
   copy:
     dest: .inputrc
