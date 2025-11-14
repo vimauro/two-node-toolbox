@@ -75,8 +75,9 @@ The deployment process involves updating configuration files and running an Ansi
 #### SSH access (optional)
 - Public Key Access: For convenience, your local public key is added to the authorized keys on the remote host.
 
-  - This guide assumes your public key is located at `~/.ssh/id_ed25519.pub`.
-    If your public key path is different, you need to update this path in the file roles/config/tasks/main.yaml.
+  - By default, the deployment uses `~/.ssh/id_ed25519.pub` from your local machine.
+  - If you're using the AWS hypervisor, you can configure a different key path in `instance.env` by setting the `SSH_PUBLIC_KEY` variable (e.g., `export SSH_PUBLIC_KEY=~/.ssh/id_rsa.pub`).
+  - The deployment automatically detects and uses the configured key from `instance.env` if available.
 
 
 ### Step 2: Run Deployment

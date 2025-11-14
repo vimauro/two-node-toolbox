@@ -51,6 +51,32 @@
       throttle: 1  # Reboot one node at a time
       become: yes
 
+    - name: Gather package facts after reboot
+      package_facts:
+        manager: rpm
+
+    - name: Extract expected RPM name without .rpm extension
+      set_fact:
+        expected_rpm_name: "{{ rpm_package | regex_replace('\\.rpm$', '') }}"
+
+    - name: Verify resource-agents package is installed
+      assert:
+        that:
+          - "'resource-agents' in ansible_facts.packages"
+        fail_msg: "resource-agents package not found in installed packages"
+        success_msg: "resource-agents package is installed"
+
+    - name: Extract installed version string
+      set_fact:
+        installed_version: "resource-agents-{{ ansible_facts.packages['resource-agents'][0].version }}-{{ ansible_facts.packages['resource-agents'][0].release }}.{{ ansible_facts.packages['resource-agents'][0].arch }}"
+
+    - name: Verify installed version matches expected version
+      assert:
+        that:
+          - installed_version == expected_rpm_name
+        fail_msg: "Version mismatch! Expected: {{ expected_rpm_name }}, but found: {{ installed_version }}"
+        success_msg: "Successfully verified installation: {{ installed_version }}"
+
   vars:
     rpm_full_path: "{{ rpm_full_path | default(lookup('env', 'RPM_FULL_PATH')) }}"
     rpm_package: "{{ rpm_full_path | basename }}"
