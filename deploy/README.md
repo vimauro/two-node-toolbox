@@ -106,6 +106,60 @@ $ make force-stop
 $ make destroy
 ```
 
+### Managing Multiple AWS Metal Machines
+
+The tooling supports deploying and managing multiple AWS metal machines simultaneously. This is useful for testing different configurations or running multiple clusters in parallel.
+
+#### How It Works
+
+Two key variables in `aws-hypervisor/instance.env` control which machine you're working with:
+- **`SHARED_DIR`**: The directory where instance data is stored (e.g., `instance-data-machine1`)
+- **`STACK_NAME`**: The CloudFormation stack name (e.g., `machine1`)
+
+Each unique combination of these variables represents a separate AWS metal machine deployment.
+
+#### Workflow for Multiple Machines
+
+**Initial deployment of a machine:**
+```bash
+# Edit instance.env to set your first deployment
+export SHARED_DIR=instance-data-machine1
+export STACK_NAME=machine1
+
+# Deploy the machine
+$ make deploy
+```
+
+**Deploy a second machine:**
+```bash
+# Edit instance.env with new values
+export SHARED_DIR=instance-data-machine2
+export STACK_NAME=machine2
+
+# Deploy the second machine
+$ make deploy
+```
+
+**Switch between machines:**
+
+To switch which machine you're working with, simply update the two variables in `instance.env` and update the inventory:
+
+```bash
+# Edit instance.env to point to the machine you want
+export SHARED_DIR=instance-data-machine1
+export STACK_NAME=machine1
+
+# Update SSH configuration to point to this machine
+$ make inventory
+
+# Now use any command normally (it will operate on machine1)
+$ make fencing-ipi
+$ make ssh
+$ make stop
+```
+
+This allows you to seamlessly switch between different AWS metal machines without any additional configuration changes.
+
 ### OpenShift Cluster Management
 
 When running OpenShift clusters on the instance (using dev-scripts), you have several options for managing cluster lifecycle:

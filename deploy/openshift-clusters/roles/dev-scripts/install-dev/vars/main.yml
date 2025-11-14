@@ -14,5 +14,5 @@ make_target:
   ipi: "all"
   agent: "agent"
 # Cluster state management variables
-cluster_state_dir: "../aws-hypervisor/instance-data"
+cluster_state_dir: "../aws-hypervisor/{{ lookup('env', 'SHARED_DIR') }}"
 cluster_state_filename: "cluster-vm-state.json"
