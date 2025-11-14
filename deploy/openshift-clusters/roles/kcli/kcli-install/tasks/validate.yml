@@ -64,6 +64,6 @@
 - name: Fail if cluster exists and force_cleanup is false
   fail:
     msg: "Cluster {{ test_cluster_name }} already exists. Set force_cleanup=true to remove existing cluster first."
-  when: 
+  when:
     - cluster_vms_exist
-    - not force_cleanup 
+    - not force_cleanup

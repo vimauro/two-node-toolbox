@@ -48,7 +48,7 @@
     - name: Collect etcd podman logs
       shell: podman logs etcd
       register: etcd_logs
-      async: 30  # 30 sec timeout
+      async: 30 # 30 sec timeout
       poll: 10
       failed_when: false
       become: yes
@@ -77,7 +77,7 @@
 
     - name: Display collection summary
       debug:
-        msg: |
+        msg: |-
           Log collection complete for {{ inventory_hostname }}:
           - Pacemaker logs: {{ 'collected' if pacemaker_logs.rc == 0 else 'failed' }}
           - Etcd logs: {{ 'collected' if etcd_logs.rc == 0 else 'failed/timeout' }}

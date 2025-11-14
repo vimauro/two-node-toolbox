@@ -1,2 +1,3 @@
+---
 - name: Set OCP project
   command: oc --kubeconfig="{{kubeconfig_path}}" project openshift-machine-api

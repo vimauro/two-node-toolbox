@@ -1,3 +1,4 @@
+---
 - hosts: metal_machine
   gather_facts: no
   force_handlers: yes
@@ -36,7 +37,7 @@
              - Recovers from incomplete/failed deployment state
 
           3. COMPLETE REBUILD (different topology):
-             - Two-node with fencing ↔ Two-node with arbiter  
+             - Two-node with fencing ↔ Two-node with arbiter
              - Uses make realclean + full installation from scratch
              - Slower but guarantees clean state with correct topology
 
@@ -81,7 +82,7 @@
           REASON: Cluster topology change detected
           NOTE: Ensures completely clean state but takes longest time
           {% elif clean_needed | bool %}
-          STRATEGY: Clean deployment (make clean + full install)  
+          STRATEGY: Clean deployment (make clean + full install)
           REASON: Previous deployment incomplete or status unknown
           NOTE: Recovers from incomplete state, faster than complete rebuild
           {% else %}
@@ -97,7 +98,7 @@
         prompt: |-
           Please verify the information above is correct. Press Enter to proceed with:
           {% if vm_cleanup_needed | bool %}COMPLETE REBUILD
-          {% elif clean_needed | bool %}CLEAN DEPLOYMENT  
+          {% elif clean_needed | bool %}CLEAN DEPLOYMENT
           {% else %}FAST REDEPLOY
           {% endif %}
       delegate_to: localhost
@@ -123,14 +124,14 @@
         chdir: "{{ dev_scripts_path }}"
         target: clean
       register: clean_result
-      when: 
+      when:
         - clean_needed | bool
-        - not (vm_cleanup_needed | bool)  # Don't clean if we already did realclean
+        - not (vm_cleanup_needed | bool) # Don't clean if we already did realclean
 
     - name: Display clean completion
       ansible.builtin.debug:
         msg: "Clean completed - ready for fresh installation to recover from incomplete state"
-      when: 
+      when:
         - clean_needed | bool
         - not (vm_cleanup_needed | bool)
 
@@ -141,5 +142,4 @@
   post_tasks:
     - name: Update inventory with cluster VMs
       include_tasks: roles/common/tasks/update-cluster-inventory.yml
-
-  # Cluster state management is now handled by the install-dev role
+      # Cluster state management is now handled by the install-dev role

@@ -153,7 +153,7 @@
   tasks:
     - name: Show completion message
       debug:
-        msg: |
+        msg: |-
           Resource-agents build and patch complete!
           RPM location: {{ playbook_dir }}/{{ hostvars[groups['metal_machine'][0]]['rpm_filename'] }}
           Cluster nodes have been patched and rebooted.

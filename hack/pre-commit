@@ -1,0 +1,27 @@
+#!/bin/bash
+
+set -e
+
+echo "Running pre-commit verification..."
+
+if ! make verify; then
+  echo ""
+  echo "❌ Pre-commit verification failed!"
+  echo ""
+  echo "To fix formatting issues, run:"
+  echo "  make yamlfmt"
+  echo ""
+  echo "To fix shell script issues, run:"
+  echo "  make shellcheck"
+  echo ""
+  echo "After fixing issues, stage your changes and commit again."
+  echo ""
+  echo "To bypass this hook (not recommended), use:"
+  echo "  git commit --no-verify"
+  echo ""
+  exit 1
+fi
+
+echo "✅ Pre-commit verification passed!"
+exit 0
+
