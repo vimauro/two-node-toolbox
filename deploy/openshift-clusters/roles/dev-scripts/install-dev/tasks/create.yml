@@ -14,13 +14,16 @@
 
 - name: Allow qemu read access for agent install
   ansible.posix.acl:
-    path: "."
+    path: "{{ item }}"
     entity: qemu
     etype: user
     permissions: rx
     state: present
   become: true
   when: method == "agent"
+  loop:
+    - "."
+    - "/root"
 
 - name: Start OpenShift
   make:
