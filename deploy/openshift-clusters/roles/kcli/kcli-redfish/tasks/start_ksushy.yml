@@ -1,23 +1,31 @@
 ---
 # Start ksushy BMC simulator for fencing support
 
-- name: Check if ksushy is already running
-  shell: "ps aux | grep -v grep | grep ksushy"
-  register: ksushy_running
+- name: Check if ksushy service is already running
+  ansible.builtin.systemd:
+    name: ksushy.service
+    scope: user
+  register: ksushy_service
   failed_when: false
   changed_when: false
 
+- name: Set ksushy running status
+  set_fact:
+    ksushy_running: "{{ ksushy_service.status.ActiveState | default('inactive') == 'active' }}"
+
 - name: Create ksushy systemd service
   shell: "KSUSHY_LISTEN_PORT={{ ksushy_port }} kcli create sushy-service"
-  when: ksushy_running.rc != 0
+  when: not ksushy_running
 
-- name: Ensure firewall allows ksushy port (runtime)
-  shell: "sudo firewall-cmd --add-port={{ ksushy_port }}/tcp --zone=libvirt"
-  when: ksushy_running.rc != 0
-
-- name: Ensure firewall allows ksushy port (permanent)
-  shell: "sudo firewall-cmd --permanent --add-port={{ ksushy_port }}/tcp --zone=libvirt"
-  when: ksushy_running.rc != 0
+- name: Ensure firewall allows ksushy port
+  ansible.posix.firewalld:
+    port: "{{ ksushy_port }}/tcp"
+    zone: libvirt
+    permanent: true
+    immediate: true
+    state: enabled
+  become: true
+  when: not ksushy_running
 
 - name: Wait for ksushy to start
   wait_for:
@@ -25,12 +33,12 @@
     host: "{{ ksushy_ip }}"
     delay: 2
     timeout: 30
-  when: ksushy_running.rc != 0
+  when: not ksushy_running
 
 - name: Display ksushy status
   debug:
     msg: |
-      {% if ksushy_running.rc == 0 %}
+      {% if ksushy_running %}
       ksushy BMC simulator was already running
       {% else %}
       ksushy BMC simulator started successfully on {{ ksushy_ip }}:{{ ksushy_port }}
