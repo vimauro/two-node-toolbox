@@ -9,6 +9,7 @@
     build_dir: "/tmp/resource-agents-build"
     rpm_dest_dir: "{{ playbook_dir }}"
     inventory_file: "{{ playbook_dir }}/../deploy/openshift-clusters/inventory.ini"
+    build_only: "{{ build_only | default(false) | bool }}"
 
   tasks:
     - name: Verify inventory.ini exists
@@ -39,6 +40,7 @@
           Branch: {{ resource_agents_branch }}
           Repository: {{ resource_agents_repo }}
           Build directory: {{ build_dir }}
+          Build only (skip patching): {{ build_only }}
 
 - name: Build RPM on hypervisor
   hosts: metal_machine
@@ -143,6 +145,7 @@
 
 - name: Patch cluster nodes with new RPM
   import_playbook: apply-rpm-patch.yml
+  when: not (build_only | default(false) | bool)
   vars:
     target_hosts: cluster_vms
     rpm_full_path: "{{ playbook_dir }}/{{ hostvars[groups['metal_machine'][0]]['rpm_filename'] }}"
@@ -151,9 +154,18 @@
   hosts: localhost
   gather_facts: no
   tasks:
-    - name: Show completion message
+    - name: Show completion message (build and patch)
+      when: not (build_only | default(false) | bool)
       debug:
         msg: |
           Resource-agents build and patch complete!
           RPM location: {{ playbook_dir }}/{{ hostvars[groups['metal_machine'][0]]['rpm_filename'] }}
           Cluster nodes have been patched and rebooted.
+
+    - name: Show completion message (build only)
+      when: build_only | default(false) | bool
+      debug:
+        msg: |
+          Resource-agents build complete!
+          RPM location: {{ playbook_dir }}/{{ hostvars[groups['metal_machine'][0]]['rpm_filename'] }}
+          Skipped patching cluster nodes (build_only=true).

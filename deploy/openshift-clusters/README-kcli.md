@@ -90,7 +90,8 @@ You can configure the deployment using any combination of these methods (in prec
 
 1. **Command line variables** (highest precedence)
 2. **Playbook vars section**
-3. **Role defaults** (lowest precedence) (`roles/kcli/kcli-install/defaults/main.yml`)
+3. **vars/kcli.yml** (user configuration file)
+4. **Role defaults** (lowest precedence) (`roles/kcli/kcli-install/defaults/main.yml`)
 
 For simple overrides, the command line is recommended. For setting your preferred permanent config, copy [kcli.yml.template](vars/kcli.yml.template) to [kcli.yml](vars/kcli.yml) and update the values to your preference. This file is not tracked by Git and will persist between TNT updates. 
 

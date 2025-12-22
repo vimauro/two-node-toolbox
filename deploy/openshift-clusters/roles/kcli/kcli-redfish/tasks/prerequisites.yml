@@ -3,11 +3,10 @@
 # Install required Python dependencies for kubernetes.core collection
 
 - name: Enable CodeReady Builder repository for RHEL 9
-  command: subscription-manager repos --enable codeready-builder-for-rhel-9-$(arch)-rpms
+  community.general.rhsm_repository:
+    name: "codeready-builder-for-rhel-9-{{ ansible_architecture }}-rpms"
+    state: enabled
   become: true
-  register: codeready_result
-  failed_when: false
-  changed_when: "'already enabled' not in codeready_result.stderr"
 
 - name: Install EPEL repository for RHEL 9
   dnf:

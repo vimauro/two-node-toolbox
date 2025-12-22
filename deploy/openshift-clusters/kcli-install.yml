@@ -82,7 +82,7 @@
     - kcli/kcli-install
 
   vars_files:
-    - vars/main.yml
+    - vars/kcli.yml
 
   tasks:
   # Setup proxy access as a separate step after cluster deployment
