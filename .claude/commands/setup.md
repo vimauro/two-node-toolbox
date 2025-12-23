@@ -313,10 +313,9 @@ Assistant: [Checks if file exists]
 
 ### Fallback Pattern:
 If user rejects a tool use that Claude tried to execute:
-1. Apologize briefly
-2. Provide the manual command
-3. Ask user to run it and confirm when done
-4. Continue with verification step when they resume
+1. Provide the manual command
+2. Ask user to run it and confirm when done
+3. Continue with verification step when they resume
 
 ## Important Notes
 
