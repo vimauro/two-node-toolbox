@@ -8,3 +8,4 @@ deploy/openshift-clusters/roles/install-dev/files/pull-secret.json
 deploy/openshift-clusters/vars/kcli.yml
 deploy/openshift-clusters/inventory.ini.*
 logs/*
+helpers/*.rpm
