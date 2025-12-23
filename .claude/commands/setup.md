@@ -1,3 +1,7 @@
+---
+description: Set up two-node-toolbox configuration for deployment
+---
+
 You are helping a user set up the two-node-toolbox repository for the first time. Guide them through the configuration process step by step.
 
 ## Command Arguments
@@ -9,6 +13,7 @@ The user may specify what they want to configure:
 - `/setup kcli`: Configure kcli installation only
 - `/setup dev-scripts`: Configure dev-scripts installation only
 - `/setup all`: Configure all four options
+Present the options in categories. external and aws are in the "hypervisor" category. kcli and dev-scripts are in the "installer" category.
 
 ## Your Task
 
@@ -21,6 +26,67 @@ Based on the argument provided (or user's interactive choice), guide them throug
 5. **Validate configuration** - Check if files are properly set up
 6. **Suggest next steps** - Provide commands to run next
 
+## Shared Prerequisites
+
+### SSH Key Check
+
+All deployment methods require an SSH key on the local machine. Check for any of these files:
+- `~/.ssh/id_ed25519.pub` (preferred)
+- `~/.ssh/id_rsa.pub`
+- Any `~/.ssh/id_*.pub` file
+
+If no SSH key exists, create one with: `ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519`
+
+**Note for non-default key paths:** Set `SSH_PUBLIC_KEY` in [deploy/aws-hypervisor/instance.env](deploy/aws-hypervisor/instance.env). This is used by both the AWS hypervisor and dev-scripts deployments.
+
+### Inventory File
+
+Required for: external, kcli, dev-scripts (not AWS - it auto-generates inventory)
+
+- File: [deploy/openshift-clusters/inventory.ini](deploy/openshift-clusters/inventory.ini)
+- Template: [deploy/openshift-clusters/inventory.ini.sample](deploy/openshift-clusters/inventory.ini.sample)
+- Check if it exists and has been edited (differs from sample)
+- User needs to provide: host IP, SSH user, optional sudo password
+- Suggest copying: `cp deploy/openshift-clusters/inventory.ini.sample deploy/openshift-clusters/inventory.ini`
+
+### Ansible Collections
+
+Required for: external, kcli, dev-scripts
+
+- Check if [collections/requirements.yml](collections/requirements.yml) exists
+- Suggest: `ansible-galaxy collection install -r collections/requirements.yml`
+
+### Pull Secret
+
+Required for: kcli, dev-scripts
+
+The same pull secret is used by both kcli and dev-scripts (stored in different locations).
+
+- kcli location: [deploy/openshift-clusters/roles/kcli/kcli-install/files/pull-secret.json](deploy/openshift-clusters/roles/kcli/kcli-install/files/pull-secret.json)
+- dev-scripts location: [deploy/openshift-clusters/roles/dev-scripts/install-dev/files/pull-secret.json](deploy/openshift-clusters/roles/dev-scripts/install-dev/files/pull-secret.json)
+
+**Setup logic:**
+- Check if file exists in either location
+- If it exists in one location, offer to copy it to the other
+- If it doesn't exist anywhere:
+  - User gets pull secret from: https://cloud.redhat.com/openshift/install/pull-secret
+  - **For CI builds**: Must include `registry.ci.openshift.org` access (see [CI Token](#ci-token) below)
+  - Suggest creating file and pasting content
+
+**Validation:**
+- Validate pull secret is valid JSON: `jq . < <path-to-pull-secret>`
+- Check for CI registry access (if needed): `jq '.auths | has("registry.ci.openshift.org")' < <path-to-pull-secret>`
+
+### CI Token
+
+Required for: dev-scripts (when using CI builds)
+
+- Visit: https://console-openshift-console.apps.ci.l2s4.p1.openshiftapps.com
+- Click name (top right) → "Copy login command" → "Display Token"
+- Copy the API token
+
+---
+
 ## Configuration Sections
 
 ### External Host Configuration
@@ -29,17 +95,13 @@ Based on the argument provided (or user's interactive choice), guide them throug
 
 **Prerequisites to check:**
 - Check if ansible is installed: `which ansible-playbook`
-- Check if SSH key exists: Look for `~/.ssh/id_ed25519.pub` or `~/.ssh/id_rsa.pub`
+- SSH key exists (see [SSH Key Check](#ssh-key-check))
+- Inventory file configured (see [Inventory File](#inventory-file))
+- Ansible collections installed (see [Ansible Collections](#ansible-collections))
 
 **Files to configure:**
 
-1. **Inventory file**: [deploy/openshift-clusters/inventory.ini](deploy/openshift-clusters/inventory.ini)
-   - Template: [deploy/openshift-clusters/inventory.ini.sample](deploy/openshift-clusters/inventory.ini.sample)
-   - Check if it exists and has been edited (differs from sample)
-   - User needs to provide: host IP, SSH user, optional sudo password
-   - Suggest copying: `cp deploy/openshift-clusters/inventory.ini.sample deploy/openshift-clusters/inventory.ini`
-
-2. **RHSM credentials** (3 options - user picks one):
+1. **RHSM credentials** (3 options - user picks one):
    - **Option A (Recommended)**: Environment variables
      - `export RHSM_ACTIVATION_KEY="your-key"`
      - `export RHSM_ORG="your-org-id"`
@@ -52,14 +114,9 @@ Based on the argument provided (or user's interactive choice), guide them throug
 
    - **Option C**: Command line (they'll add when running playbook)
 
-3. **Ansible collections**:
-   - Check if [collections/requirements.yml](collections/requirements.yml) exists
-   - Suggest: `ansible-galaxy collection install -r collections/requirements.yml`
-
 **Validation:**
-- Verify [deploy/openshift-clusters/inventory.ini](deploy/openshift-clusters/inventory.ini) exists
+- Verify inventory file exists
 - Check if RHSM credentials are configured (env vars or file)
-- Verify SSH key exists
 
 **Next steps:**
 - Run: `ansible-playbook deploy/openshift-clusters/init-host.yml -i deploy/openshift-clusters/inventory.ini`
@@ -101,41 +158,22 @@ Based on the argument provided (or user's interactive choice), guide them throug
 **Purpose**: Deploy OpenShift using kcli virtualization tool (fencing topology)
 
 **Prerequisites to check:**
-- Ansible collections installed
-- SSH key exists on local machine: `~/.ssh/id_ed25519.pub`
+- SSH key exists (see [SSH Key Check](#ssh-key-check))
+- Inventory file configured (see [Inventory File](#inventory-file))
+- Ansible collections installed (see [Ansible Collections](#ansible-collections))
+- Pull secret configured (see [Pull Secret](#pull-secret))
 
 **Files to configure:**
 
-1. **Inventory file**: [deploy/openshift-clusters/inventory.ini](deploy/openshift-clusters/inventory.ini)
-   - Same as external host section (skip if already configured)
-
-2. **Pull secret**: [deploy/openshift-clusters/roles/kcli/kcli-install/files/pull-secret.json](deploy/openshift-clusters/roles/kcli/kcli-install/files/pull-secret.json)
-   - **NOTE**: This is the same pull secret used by dev-scripts
-   - Check if file exists here OR at [deploy/openshift-clusters/roles/dev-scripts/install-dev/files/pull-secret.json](deploy/openshift-clusters/roles/dev-scripts/install-dev/files/pull-secret.json)
-   - If it exists in either location, offer to copy it to the other location
-   - If it doesn't exist anywhere:
-     - User gets pull secret from: https://cloud.redhat.com/openshift/install/pull-secret
-     - **For CI builds**: Must include `registry.ci.openshift.org` access
-       - Get CI access: https://console-openshift-console.apps.ci.l2s4.p1.openshiftapps.com
-       - Login → Click name → "Copy login command" → "Display Token"
-     - Suggest creating file and pasting content
-
-3. **SSH key on local machine**:
-   - Check if `~/.ssh/id_ed25519.pub` exists
-   - If not: `ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519`
-
-4. **Optional persistent config**: [deploy/openshift-clusters/vars/kcli.yml](deploy/openshift-clusters/vars/kcli.yml)
+1. **Optional persistent config**: [deploy/openshift-clusters/vars/kcli.yml](deploy/openshift-clusters/vars/kcli.yml)
    - Template: [deploy/openshift-clusters/vars/kcli.yml.template](deploy/openshift-clusters/vars/kcli.yml.template)
    - Check if exists
    - For setting preferred defaults (cluster name, resources, etc.)
    - Suggest copying: `cp deploy/openshift-clusters/vars/kcli.yml.template deploy/openshift-clusters/vars/kcli.yml`
 
 **Validation:**
-- Verify [inventory.ini](deploy/openshift-clusters/inventory.ini) exists
-- Verify [pull-secret.json](deploy/openshift-clusters/roles/kcli/kcli-install/files/pull-secret.json) exists
-- Validate pull secret is valid JSON: `jq . < deploy/openshift-clusters/roles/kcli/kcli-install/files/pull-secret.json`
-- Check for CI registry access (if needed): `jq '.auths | has("registry.ci.openshift.org")' < deploy/openshift-clusters/roles/kcli/kcli-install/files/pull-secret.json`
-- Verify SSH key exists
+- Verify inventory file exists
+- Verify pull secret exists and is valid JSON
 
 **Next steps:**
 - Run: `ansible-playbook deploy/openshift-clusters/kcli-install.yml -i deploy/openshift-clusters/inventory.ini`
@@ -147,22 +185,21 @@ Based on the argument provided (or user's interactive choice), guide them throug
 **Purpose**: Deploy OpenShift using traditional dev-scripts method (arbiter or fencing)
 
 **Prerequisites to check:**
-- Ansible collections installed
-- SSH key exists
+- SSH key exists (see [SSH Key Check](#ssh-key-check))
+- Inventory file configured (see [Inventory File](#inventory-file))
+- Ansible collections installed (see [Ansible Collections](#ansible-collections))
+- Pull secret configured (see [Pull Secret](#pull-secret))
 
 **Files to configure:**
 
-1. **Inventory file**: [deploy/openshift-clusters/inventory.ini](deploy/openshift-clusters/inventory.ini)
-   - Same as previous sections (skip if already configured)
-
-2. **Topology config files** in [deploy/openshift-clusters/roles/dev-scripts/install-dev/files/](deploy/openshift-clusters/roles/dev-scripts/install-dev/files/):
+1. **Topology config files** in [deploy/openshift-clusters/roles/dev-scripts/install-dev/files/](deploy/openshift-clusters/roles/dev-scripts/install-dev/files/):
 
    a. **Arbiter config**: [config_arbiter.sh](deploy/openshift-clusters/roles/dev-scripts/install-dev/files/config_arbiter.sh)
       - Template: [config_arbiter_example.sh](deploy/openshift-clusters/roles/dev-scripts/install-dev/files/config_arbiter_example.sh)
       - Check if exists
       - User must set:
         - `OPENSHIFT_RELEASE_IMAGE` (e.g., `quay.io/openshift-release-dev/ocp-release:4.19.0-rc.5-multi-x86_64`)
-        - `CI_TOKEN` (unless using `OPENSHIFT_CI="True"`)
+        - `CI_TOKEN` (see [CI Token](#ci-token)) unless using `OPENSHIFT_CI="True"`
       - Suggest copying: `cp deploy/openshift-clusters/roles/dev-scripts/install-dev/files/config_arbiter_example.sh deploy/openshift-clusters/roles/dev-scripts/install-dev/files/config_arbiter.sh`
 
    b. **Fencing config**: [config_fencing.sh](deploy/openshift-clusters/roles/dev-scripts/install-dev/files/config_fencing.sh)
@@ -171,36 +208,13 @@ Based on the argument provided (or user's interactive choice), guide them throug
       - Same requirements as arbiter config
       - Suggest copying: `cp deploy/openshift-clusters/roles/dev-scripts/install-dev/files/config_fencing_example.sh deploy/openshift-clusters/roles/dev-scripts/install-dev/files/config_fencing.sh`
 
-   - **CI Token guide**:
-     - Visit: https://console-openshift-console.apps.ci.l2s4.p1.openshiftapps.com
-     - Click name (top right) → "Copy login command" → "Display Token"
-     - Copy the API token
-
    - **Config reference**: https://github.com/openshift-metal3/dev-scripts/blob/master/config_example.sh
 
-3. **Pull secret**: [deploy/openshift-clusters/roles/dev-scripts/install-dev/files/pull-secret.json](deploy/openshift-clusters/roles/dev-scripts/install-dev/files/pull-secret.json)
-   - **NOTE**: This is the same pull secret used by kcli
-   - Check if file exists here OR at [deploy/openshift-clusters/roles/kcli/kcli-install/files/pull-secret.json](deploy/openshift-clusters/roles/kcli/kcli-install/files/pull-secret.json)
-   - If it exists in either location, offer to copy it to the other location
-   - If it doesn't exist anywhere:
-     - User gets pull secret from: https://cloud.redhat.com/openshift/install/pull-secret
-     - Suggest creating file and pasting content
-
-4. **SSH key configuration**:
-   - Default location: `~/.ssh/id_ed25519.pub`
-   - If user's key is elsewhere, they need to update: [deploy/openshift-clusters/roles/config/tasks/main.yaml](deploy/openshift-clusters/roles/config/tasks/main.yaml)
-
-5. **Ansible collections**:
-   - Check if [collections/requirements.yml](collections/requirements.yml) exists
-   - Suggest: `ansible-galaxy collection install -r collections/requirements.yml`
-
 **Validation:**
-- Verify [inventory.ini](deploy/openshift-clusters/inventory.ini) exists
+- Verify inventory file exists
 - For arbiter: Check [config_arbiter.sh](deploy/openshift-clusters/roles/dev-scripts/install-dev/files/config_arbiter.sh) exists
 - For fencing: Check [config_fencing.sh](deploy/openshift-clusters/roles/dev-scripts/install-dev/files/config_fencing.sh) exists
-- Verify [pull-secret.json](deploy/openshift-clusters/roles/dev-scripts/install-dev/files/pull-secret.json) exists
-- Validate pull secret is valid JSON: `jq . < deploy/openshift-clusters/roles/dev-scripts/install-dev/files/pull-secret.json`
-- Verify SSH key exists
+- Verify pull secret exists and is valid JSON
 
 **Next steps:**
 - Interactive: `ansible-playbook deploy/openshift-clusters/setup.yml -i deploy/openshift-clusters/inventory.ini`
@@ -312,10 +326,7 @@ If user rejects a tool use that Claude tried to execute:
 - Be clear about which values are required vs. optional
 - After each user action, VERIFY it was completed before proceeding
 - If prerequisites are missing, clearly state what needs to be installed
-- Remember that some files are shared between methods:
-  - `inventory.ini` is shared between external, kcli, and dev-scripts
-  - `pull-secret.json` is shared between kcli and dev-scripts (same file, different locations)
-  - When configuring multiple methods, check if shared files already exist and offer to copy them instead of recreating
+- Shared prerequisites are documented in [Shared Prerequisites](#shared-prerequisites) - check these first when configuring multiple methods
 - The main README states defaults: "By default, we'll configure the AWS hypervisor and the dev-scripts installation"
 - **NEVER skip verification steps** - always confirm each action was completed successfully
 - **STOP after giving each instruction** - wait for user to complete it and confirm
