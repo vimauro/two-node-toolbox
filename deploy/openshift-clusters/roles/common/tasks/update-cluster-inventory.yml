@@ -79,8 +79,12 @@
       shell: |
         # Get the SSH key Ansible is using (check in order of preference)
         if [ -n "$SSH_AUTH_SOCK" ]; then
-          # If using ssh-agent, get the first key
-          ssh-add -L 2>/dev/null | head -n1 && exit 0
+          # If using ssh-agent, get the first key (filter out error messages)
+          KEY=$(ssh-add -L 2>/dev/null | grep -v "^The agent has no identities" | head -n1)
+          if [ -n "$KEY" ]; then
+            echo "$KEY"
+            exit 0
+          fi
         fi
 
         # Check common key locations
@@ -102,11 +106,23 @@
         local_ssh_pubkey_content: "{{ detected_ssh_key.stdout | trim }}"
       when: detected_ssh_key.rc == 0
 
+    - name: Validate SSH public key format
+      delegate_to: localhost
+      set_fact:
+        ssh_key_valid: "{{ local_ssh_pubkey_content is defined and local_ssh_pubkey_content is match('^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521|ssh-dss) ') }}"
+
+    - name: Warn if no valid SSH key found
+      debug:
+        msg: |
+          WARNING: No valid SSH public key detected on the local machine.
+          ProxyJump SSH access to cluster VMs will not work.
+          Ensure you have an SSH key pair in ~/.ssh/ (id_ed25519, id_rsa, etc.)
+      when: not (ssh_key_valid | default(false))
+
     - name: Add local user's SSH key to cluster VMs
       loop: "{{ parsed_vm_entries }}"
       when:
-        - local_ssh_pubkey_content is defined
-        - local_ssh_pubkey_content | length > 0
+        - ssh_key_valid | default(false)
       shell: |
         set -e
         VM_IP="{{ item.ip }}"
