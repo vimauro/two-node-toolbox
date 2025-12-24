@@ -103,6 +103,7 @@ The `build-and-patch-resource-agents.yml` playbook automates the entire workflow
 # From the deploy/ directory
 # Simplest, no customization. Uses resource-agents repo, main branch, auto sets next version
 make patch-nodes
+```
 
 #### Using Ansible Directly
 

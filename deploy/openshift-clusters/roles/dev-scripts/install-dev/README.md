@@ -24,7 +24,7 @@ The install-dev role handles the complete setup of OpenShift bare metal developm
 - `dev_scripts_path`: Path to dev-scripts directory (default: "openshift-metal3/dev-scripts")
 - `dev_scripts_branch`: Git branch to use (default: "master")
 - `test_cluster_name`: OpenShift cluster name (default: "ostest")
-- `method`: Deployment method (default: "ipi")
+- `method`: Deployment method (set by calling playbook, e.g., "ipi")
 
 ### Computed Variables (vars/main.yml)
 
@@ -42,10 +42,11 @@ ansible-playbook setup.yml
 
 ## Task Structure
 
-- `dev-scripts.yml`: Dev-scripts environment setup
-- `create.yml`: OpenShift cluster creation (conditional)
-- `proxy.yml`: Proxy configuration setup
 - `main.yml`: Orchestrates all tasks and configures aliases
+- `bounce.yml`: Cluster bounce/restart operations
+- `check_vars.yml`: Variable validation
+- `config.yml`: Configuration setup
+- `teardown.yml`: Cluster teardown operations
 
 ## Notes
 

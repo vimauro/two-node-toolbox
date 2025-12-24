@@ -115,7 +115,7 @@ make shellcheck
 - `roles/dev-scripts/install-dev/files/pull-secret.json`: OpenShift pull secret
 
 #### Kcli Method
-- `vars/kcli-install.yml`: Variable override file for persistent configuration
+- `vars/kcli.yml`: Variable override file for persistent configuration
 - `roles/kcli/kcli-install/files/pull-secret.json`: OpenShift pull secret
 - SSH key automatically read from `~/.ssh/id_ed25519.pub` on ansible controller
 
@@ -150,10 +150,6 @@ The repository includes comprehensive README files in `deploy/openshift-clusters
 
 ## Development Guidelines and Standards
 
-### Critical Repository Structure Rules
-
-**IMPORTANT**: The `kcli/` directory is included for reference only and should NEVER be modified. It contains the upstream kcli tool that we integrate with, but all development work happens in the `deploy/` and `docs/` directories.
-
 ### File Organization
 
 **Development Areas:**
@@ -161,7 +157,6 @@ The repository includes comprehensive README files in `deploy/openshift-clusters
   - `deploy/aws-hypervisor/`: AWS hypervisor setup scripts  
   - `deploy/openshift-clusters/`: OpenShift cluster deployment with Ansible
 - **`docs/`**: Project documentation for different topologies
-- **`kcli/`**: **READ-ONLY** - Reference copy of upstream kcli tool (DO NOT MODIFY)
 
 ### Coding Standards
 
@@ -213,7 +208,6 @@ The repository includes comprehensive README files in `deploy/openshift-clusters
 ### Development Workflow Rules
 
 #### When Making Changes
-- **NEVER modify anything in the `kcli/` directory** - it's reference material only
 - Focus changes on `deploy/` scripts and `docs/` documentation
 - Consider impact on multiple virtualization providers when updating deployment scripts
 - Test deployment scenarios end-to-end
@@ -221,13 +215,6 @@ The repository includes comprehensive README files in `deploy/openshift-clusters
 - Consider backward compatibility for existing deployments
 - Check for credential exposure in logs or output
 - Validate Ansible playbooks and shell scripts before committing
-
-#### Working with kcli Integration
-- Use `kcli/` directory as reference for understanding kcli capabilities
-- Study `kcli/kvirt/providers/` to understand provider implementations
-- Reference `kcli/kvirt/cluster/openshift/` for OpenShift deployment patterns
-- Check `kcli/samples/` for configuration examples
-- **Remember**: Read from kcli for understanding, implement in `deploy/` for our use
 
 ### Dependencies and Configuration
 
