@@ -108,14 +108,26 @@
         - local_ssh_pubkey_content is defined
         - local_ssh_pubkey_content | length > 0
       shell: |
+        set -e
         VM_IP="{{ item.ip }}"
 
         # ssh-keyscan can use bare IP for both IPv4 and IPv6
         ssh-keyscan -H "$VM_IP" >> ~/.ssh/known_hosts 2>/dev/null || true
 
         # SSH to bare IP (works for both IPv4 and IPv6)
-        ssh -o StrictHostKeyChecking=no core@"$VM_IP" "echo '{{ local_ssh_pubkey_content }}' >> ~/.ssh/authorized_keys && sort -u ~/.ssh/authorized_keys -o ~/.ssh/authorized_keys" || true
+        ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 core@"$VM_IP" \
+          "echo '{{ local_ssh_pubkey_content }}' >> ~/.ssh/authorized_keys && sort -u ~/.ssh/authorized_keys -o ~/.ssh/authorized_keys"
+      register: ssh_key_propagation
       changed_when: false
+      retries: 3
+      delay: 5
+      until: ssh_key_propagation.rc == 0
+
+    - name: Display SSH key propagation results
+      debug:
+        msg: "SSH key added to {{ item.item.name }} ({{ item.item.ip }})"
+      loop: "{{ ssh_key_propagation.results }}"
+      when: ssh_key_propagation is defined
 
     - name: Update inventory file with cluster VMs
       delegate_to: localhost
