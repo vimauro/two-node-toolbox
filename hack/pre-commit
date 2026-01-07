@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/bash
 
-set -e
+set -euo pipefail
 
 echo "Running pre-commit verification..."
 
@@ -24,4 +24,3 @@ fi
 
 echo "✅ Pre-commit verification passed!"
 exit 0
-

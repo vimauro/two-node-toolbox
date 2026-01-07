@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/bash
 
-set -e
+set -euo pipefail
 
 CONTAINER_ENGINE=${CONTAINER_ENGINE:-podman}
 CONTAINER_IMAGE="ghcr.io/google/yamlfmt:latest"
@@ -26,4 +26,4 @@ else
     --workdir /workdir \
     $CONTAINER_IMAGE \
     hack/yamlfmt.sh "${@}"
-fi;
+fi
