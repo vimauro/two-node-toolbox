@@ -7,7 +7,7 @@ set -euo pipefail
 # Configuration
 PROXY_ENV_PATH="${PROXY_ENV_PATH:-deploy/openshift-clusters/proxy.env}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/../../../.." && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 # Color codes for output
 RED='\033[0;31m'

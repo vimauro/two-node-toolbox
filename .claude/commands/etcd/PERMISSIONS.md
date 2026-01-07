@@ -85,7 +85,7 @@ Read(.claude/commands/etcd/**)              # Skill documentation
 These scripts only validate access and don't modify state:
 
 ```
-Bash(.claude/commands/etcd/scripts/validate-cluster-access.sh)
+Bash(helpers/etcd/validate-cluster-access.sh)
 ```
 
 ## Operations Requiring User Approval
@@ -104,7 +104,7 @@ ansible-playbook *                                # Any other playbook
 ### Orchestration Scripts
 
 ```
-.claude/commands/etcd/scripts/collect-all-diagnostics.sh  # Requires approval (runs playbook)
+helpers/etcd/collect-all-diagnostics.sh  # Requires approval (runs playbook)
 ```
 
 ### Pacemaker Operations (Write)

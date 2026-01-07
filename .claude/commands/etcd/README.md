@@ -19,13 +19,13 @@ The etcd troubleshooting skill enables Claude to interactively diagnose and reso
 ├── PROJECT.md                          # Project specification and checklist
 ├── QUICK_REFERENCE.md                  # Fast troubleshooting guide (START HERE)
 ├── TROUBLESHOOTING_SKILL.md           # Detailed skill definition and guidelines
-├── playbooks/                          # Ansible playbooks
-│   ├── validate-access.yml             # Validate Ansible connectivity
-│   └── collect-diagnostics.yml         # Collect VM-level diagnostics
-├── scripts/                            # Helper scripts
+├── ../../../helpers/etcd/              # Helper scripts and playbooks
 │   ├── validate-cluster-access.sh      # Validate both Ansible and oc access
 │   ├── collect-all-diagnostics.sh      # Master orchestration script
-│   └── oc-wrapper.sh                   # oc wrapper with proxy.env handling
+│   ├── oc-wrapper.sh                   # oc wrapper with proxy.env handling
+│   └── playbooks/                      # Ansible playbooks
+│       ├── validate-access.yml         # Validate Ansible connectivity
+│       └── collect-diagnostics.yml     # Collect VM-level diagnostics
 ├── etcd-ops-guide/                     # Etcd operations documentation
 │   ├── clustering.md
 │   ├── recovery.md
@@ -71,7 +71,7 @@ The fastest way to gather all diagnostics:
 
 ```bash
 # From repository root
-./.claude/commands/etcd/scripts/collect-all-diagnostics.sh
+./helpers/etcd/collect-all-diagnostics.sh
 ```
 
 This will:
@@ -85,19 +85,19 @@ This will:
 
 **Validate Access Only:**
 ```bash
-./.claude/commands/etcd/scripts/validate-cluster-access.sh
+./helpers/etcd/validate-cluster-access.sh
 ```
 
 **Collect VM-Level Diagnostics Only:**
 ```bash
-ansible-playbook .claude/commands/etcd/playbooks/collect-diagnostics.yml \
+ansible-playbook helpers/etcd/playbooks/collect-diagnostics.yml \
   -i deploy/openshift-clusters/inventory.ini
 ```
 
 **Use oc with Automatic Proxy Handling:**
 ```bash
-./.claude/commands/etcd/scripts/oc-wrapper.sh get nodes
-./.claude/commands/etcd/scripts/oc-wrapper.sh get co etcd
+./helpers/etcd/oc-wrapper.sh get nodes
+./helpers/etcd/oc-wrapper.sh get co etcd
 ```
 
 ## Prerequisites
@@ -368,7 +368,7 @@ echo $KUBECONFIG
 **Permission issues:**
 ```bash
 # Ensure scripts are executable
-chmod +x .claude/commands/etcd/scripts/*.sh
+chmod +x helpers/etcd/*.sh
 ```
 
 ## Permission Configuration

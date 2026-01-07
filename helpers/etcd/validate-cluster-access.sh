@@ -5,7 +5,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/../../../.." && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 INVENTORY_PATH="${INVENTORY_PATH:-deploy/openshift-clusters/inventory.ini}"
 PROXY_ENV_PATH="${PROXY_ENV_PATH:-deploy/openshift-clusters/proxy.env}"
 
@@ -46,7 +46,7 @@ else
     info "Inventory file found: ${INVENTORY_PATH}"
 
     # Run Ansible validation playbook
-    if ansible-playbook "${SCRIPT_DIR}/../playbooks/validate-access.yml" \
+    if ansible-playbook "${SCRIPT_DIR}/playbooks/validate-access.yml" \
         -i "${INVENTORY_PATH}" > /tmp/ansible-validation.log 2>&1; then
         info "Ansible connectivity test passed"
         echo "  See /tmp/ansible-validation.log for details"

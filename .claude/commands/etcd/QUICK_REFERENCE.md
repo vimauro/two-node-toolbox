@@ -22,7 +22,7 @@ The `hypervisor` is only for VM lifecycle (virsh/kcli). All etcd operations run 
 
 **Collect all diagnostics automatically:**
 ```bash
-source .claude/commands/etcd/scripts/collect-all-diagnostics.sh
+./helpers/etcd/collect-all-diagnostics.sh
 ```
 
 **Check cluster health quickly:**
@@ -420,4 +420,4 @@ Use the full [TROUBLESHOOTING_SKILL.md](TROUBLESHOOTING_SKILL.md) methodology wh
 - **Detailed troubleshooting**: [TROUBLESHOOTING_SKILL.md](TROUBLESHOOTING_SKILL.md)
 - **Etcd operations**: Slash commands like `/etcd:etcd-ops-guide:recovery`
 - **Pacemaker administration**: [pacemaker/Pacemaker_Administration/](pacemaker/Pacemaker_Administration/)
-- **Diagnostic collection**: [scripts/collect-all-diagnostics.sh](scripts/collect-all-diagnostics.sh)
+- **Diagnostic collection**: [helpers/etcd/collect-all-diagnostics.sh](../../../helpers/etcd/collect-all-diagnostics.sh)

@@ -5,7 +5,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/../../../.." && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 INVENTORY_PATH="${INVENTORY_PATH:-deploy/openshift-clusters/inventory.ini}"
 PROXY_ENV_PATH="${PROXY_ENV_PATH:-deploy/openshift-clusters/proxy.env}"
 TIMESTAMP=$(date +%Y%m%dT%H%M%S)
@@ -60,7 +60,7 @@ fi
 
 section "Phase 2: Collecting VM-Level Diagnostics (Pacemaker/Etcd)"
 
-if ! ansible-playbook "${SCRIPT_DIR}/../playbooks/collect-diagnostics.yml" \
+if ! ansible-playbook "${SCRIPT_DIR}/playbooks/collect-diagnostics.yml" \
     -i "${INVENTORY_PATH}" \
     -e "output_dir=${OUTPUT_DIR}"; then
     error "VM-level data collection failed"
