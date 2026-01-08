@@ -91,7 +91,7 @@ You can configure the deployment using any combination of these methods (in prec
 1. **Command line variables** (highest precedence)
 2. **Playbook vars section**
 3. **vars/kcli.yml** (user configuration file)
-4. **Role defaults** (lowest precedence) (`roles/kcli/kcli-install/defaults/main.yml`)
+4. **Role defaults** (lowest precedence) (`vars/kcli.yml.template`)
 
 For simple overrides, the command line is recommended. For setting your preferred permanent config, copy [kcli.yml.template](vars/kcli.yml.template) to [kcli.yml](vars/kcli.yml) and update the values to your preference. This file is not tracked by Git and will persist between TNT updates. 
 
@@ -126,8 +126,8 @@ ansible-playbook kcli-install.yml \
 | `vm_memory` | `32768` | Memory per node (MB) |
 | `vm_numcpus` | `16` | CPU cores per node |
 | `vm_disk_size` | `120` | Disk size per node (GB) |
-| `ocp_version` | `"stable"` | OpenShift version channel |
-| `ocp_tag` | `"4.19"` | Specific version tag |
+| `ocp_version` | `"candidate"` | OpenShift version channel |
+| `ocp_tag` | `"4.20"` | Specific version tag |
 | `network_name` | `"default"` | kcli network name |
 | `bmc_user` | `"admin"` | BMC username (fencing) |
 | `bmc_password` | `"admin123"` | BMC password (fencing) |
@@ -141,7 +141,7 @@ topology: "fencing"
 bmc_user: "admin"
 bmc_password: "admin123"
 bmc_driver: "redfish"  
-ksushy_port: 8000
+ksushy_port: 9000
 ```
 
 ## 5. Deployment
@@ -305,7 +305,7 @@ The playbook uses reasonable defaults that work for typical kcli deployments:
 | `ksushy_ip` | `192.168.122.1` | Standard libvirt network gateway |
 | `bmc_user` | `admin` | From kcli-install defaults |
 | `bmc_password` | `admin123` | From kcli-install defaults |
-| `ksushy_port` | `8000` | From kcli-install defaults |
+| `ksushy_port` | `9000` | From kcli-install defaults |
 
 These defaults work for standard kcli deployments where VMs use the default libvirt network (`192.168.122.x/24`).
 

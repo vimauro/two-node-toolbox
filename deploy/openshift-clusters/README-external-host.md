@@ -57,7 +57,7 @@ See [hands-off deployment](../aws-hypervisor/README.md#automated-rhsm-registrati
 
 #### Option B: Local Variable File
 ```bash
-cp vars/init-host.yml.sample vars/init-host.yml.local
+cp vars/init-host.yml vars/init-host.yml.local
 # Edit vars/init-host.yml.local with your credentials
 ```
 

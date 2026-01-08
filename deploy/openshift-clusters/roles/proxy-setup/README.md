@@ -31,7 +31,7 @@ This role enables easy access to OpenShift clusters deployed in restricted netwo
 ### Optional Variables
 
 - `proxy_port`: Port for proxy service (default: 8213)
-- `proxy_user`: Default user for squid configuration (default: ec2-user)
+- `proxy_user`: User for squid configuration (auto-detected from system)
 
 ## Usage
 

@@ -78,7 +78,7 @@ This role follows the same authentication file conventions as the dev-scripts ro
 - `vm_disk_size`: Disk size per node in GB (default: 120)
 
 ### OpenShift Version
-See [defaults](../kcli-install/defaults/main.yml.template) for default values
+See [defaults](../../../vars/kcli.yml.template) for default values
 
 If you're installing a specific openshift release image, you will need to set the proper channel in ocp_version
 - `ocp_version`: OpenShift version channel
