@@ -230,7 +230,7 @@ ansible-playbook helpers/force-new-cluster.yml \
   -i deploy/openshift-clusters/inventory.ini
 ```
 
-This designates the first node in inventory as leader and forces follower to resync.
+This auto-detects the etcd leader and forces the follower to resync.
 
 ### Scenario: Resource Failed to Start
 

@@ -9,9 +9,6 @@
   become: true
 
   vars:
-    # Leader is the first node in cluster_vms group, follower is the second
-    leader_node: "{{ groups['cluster_vms'][0] }}"
-    follower_node: "{{ groups['cluster_vms'][1] }}"
     snapshot_name: "etcd-snapshot-{{ ansible_date_time.iso8601_basic_short }}.db"
     snapshot_dir: "/var/home/core"
     snapshot_retention_count: 2
@@ -35,17 +32,80 @@
       ansible.builtin.set_fact:
         node_hostname: "{{ hostname_result.stdout }}"
 
+    # Detect actual etcd leader by checking which node has a running etcd that is the leader
+    - name: Check if etcd container is running
+      ansible.builtin.command: podman ps --filter name=etcd --filter status=running --format "{{ '{{' }}.Names{{ '}}' }}"
+      register: etcd_running
+      changed_when: false
+      failed_when: false
+
+    - name: Check etcd leader status if container is running
+      ansible.builtin.shell:
+        cmd: |
+          output=$(podman exec etcd etcdctl endpoint status -w json 2>/dev/null)
+          member_id=$(echo "$output" | grep -o '"member_id":[0-9]*' | head -1 | cut -d: -f2)
+          leader_id=$(echo "$output" | grep -o '"leader":[0-9]*' | head -1 | cut -d: -f2)
+          if [ -n "$member_id" ] && [ -n "$leader_id" ] && [ "$member_id" = "$leader_id" ]; then
+            echo "true"
+          else
+            echo "false"
+          fi
+      register: etcd_leader_check
+      changed_when: false
+      failed_when: false
+      when: etcd_running.stdout | length > 0
+
+    - name: Set node leader status fact
+      ansible.builtin.set_fact:
+        is_etcd_leader: "{{ (etcd_leader_check.stdout | default('false')) | trim == 'true' }}"
+        etcd_is_running: "{{ etcd_running.stdout | length > 0 }}"
+
+    - name: Determine leader node based on etcd status
+      run_once: true
+      block:
+        - name: Find node that is etcd leader
+          ansible.builtin.set_fact:
+            detected_leader: "{{ item }}"
+          loop: "{{ groups['cluster_vms'] }}"
+          when: hostvars[item]['is_etcd_leader'] | default(false) | bool
+
+        - name: Set leader to first node with running etcd if no leader found
+          ansible.builtin.set_fact:
+            detected_leader: "{{ item }}"
+          loop: "{{ groups['cluster_vms'] }}"
+          when:
+            - detected_leader is not defined
+            - hostvars[item]['etcd_is_running'] | default(false) | bool
+
+        - name: Fall back to first inventory node if no etcd is running
+          ansible.builtin.set_fact:
+            detected_leader: "{{ groups['cluster_vms'][0] }}"
+          when: detected_leader is not defined
+
+        - name: Set follower node
+          ansible.builtin.set_fact:
+            detected_follower: "{{ groups['cluster_vms'] | difference([detected_leader]) | first }}"
+
+    - name: Set leader and follower facts for all hosts
+      ansible.builtin.set_fact:
+        leader_node: "{{ hostvars[groups['cluster_vms'][0]]['detected_leader'] }}"
+        follower_node: "{{ hostvars[groups['cluster_vms'][0]]['detected_follower'] }}"
+
+    - name: Display detected leader and follower
+      run_once: true
+      ansible.builtin.debug:
+        msg: |
+          Detected etcd leader: {{ leader_node }} ({{ hostvars[leader_node]['node_hostname'] }})
+          Detected follower: {{ follower_node }} ({{ hostvars[follower_node]['node_hostname'] }})
+          Leader detection method: {% if hostvars[leader_node]['is_etcd_leader'] | default(false) %}etcd endpoint status{% elif hostvars[leader_node]['etcd_is_running'] | default(false) %}running etcd container{% else %}inventory order (no etcd running){% endif %}
+
     - name: Register leader hostname
       ansible.builtin.set_fact:
         leader_hostname: "{{ hostvars[leader_node]['node_hostname'] }}"
-      run_once: true
-      delegate_to: "{{ leader_node }}"
 
     - name: Register follower hostname
       ansible.builtin.set_fact:
         follower_hostname: "{{ hostvars[follower_node]['node_hostname'] }}"
-      run_once: true
-      delegate_to: "{{ follower_node }}"
 
   tasks:
     - name: Disable stonith on leader node

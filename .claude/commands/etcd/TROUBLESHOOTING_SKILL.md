@@ -426,7 +426,7 @@ ansible-playbook helpers/force-new-cluster.yml -i deploy/openshift-clusters/inve
 This playbook:
 - Takes snapshots for safety
 - Clears conflicting CIB attributes
-- Designates leader (first node in inventory) to force new cluster
+- Auto-detects the etcd leader (or uses first node with running etcd, or falls back to inventory order)
 - Removes follower from member list
 - Handles all cleanup and recovery steps automatically
 
@@ -534,7 +534,7 @@ Ansible playbook at `helpers/force-new-cluster.yml` automates cluster recovery w
 1. Disables stonith temporarily for safety
 2. Takes etcd snapshots on both nodes (if etcd not running)
 3. Clears conflicting CIB attributes (learner_node, standalone_node)
-4. Sets force_new_cluster attribute on leader node (first in inventory)
+4. Sets force_new_cluster attribute on detected leader node
 5. Removes follower from etcd member list (if etcd running on leader)
 6. Runs `pcs resource cleanup etcd` on both nodes
 7. Re-enables stonith
@@ -555,7 +555,7 @@ ansible-playbook helpers/force-new-cluster.yml -i deploy/openshift-clusters/inve
 **Precautions:**
 - Only use when normal recovery procedures fail
 - Ensure follower node can afford to lose its etcd data
-- Leader (first node in inventory) will become the source of truth
+- Detected leader will become the source of truth
 - This creates a NEW cluster, follower will resync from leader
 
 ## Reference Documentation

@@ -115,7 +115,7 @@ ansible-playbook helpers/force-new-cluster.yml \
 This playbook automatically:
 - Takes snapshots for safety
 - Clears conflicting CIB attributes
-- Designates leader (first node in inventory) to force new cluster
+- Auto-detects the etcd leader (or falls back to inventory order if etcd is down)
 - Removes follower from member list
 - Cleans up and re-enables stonith
 
