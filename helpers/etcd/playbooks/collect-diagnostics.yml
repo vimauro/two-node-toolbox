@@ -171,7 +171,7 @@
       when: podman_inspect.rc == 0
 
     - name: Get podman logs for etcd
-      ansible.builtin.command: podman logs --tail 100 etcd
+      ansible.builtin.command: podman logs etcd
       register: podman_logs
       changed_when: false
       failed_when: false
