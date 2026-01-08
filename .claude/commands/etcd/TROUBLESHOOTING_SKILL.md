@@ -48,6 +48,44 @@ This is a **normal scenario** when etcd is down - proceed with VM-based troubles
 
 ### 2. Collect Data
 
+**Choose Your Diagnostic Approach**
+
+There are two approaches to data collection:
+
+**Quick Manual Triage (recommended for initial assessment)**
+
+Start with a few targeted commands to assess the situation:
+- `pcs status` - Check Pacemaker cluster state and failed actions
+- `podman ps -a --filter name=etcd` - Verify etcd containers are running
+- `etcdctl endpoint health` - Confirm etcd health
+
+This takes ~30 seconds and is often sufficient to identify simple issues (stale failures, container restarts, etc.) that can be fixed immediately with `pcs resource cleanup etcd`.
+
+**Full Diagnostic Collection (for complex/unclear issues)**
+
+If quick triage reveals complex problems or the root cause is unclear, run the comprehensive diagnostic script:
+
+```bash
+./helpers/etcd/collect-all-diagnostics.sh
+```
+
+This script (~5-10 minutes):
+- Validates Ansible and cluster access automatically
+- Collects all VM-level diagnostics via Ansible playbook
+- Collects OpenShift cluster-level data (if accessible)
+- Saves everything to `/tmp/etcd-diagnostics-<timestamp>/`
+- Generates a `DIAGNOSTIC_REPORT.txt` with analysis commands
+
+Use the full collection when:
+- Quick triage doesn't reveal the cause
+- Multiple components appear affected
+- You need to preserve diagnostic data for later analysis
+- The issue involves cluster ID mismatches or split-brain scenarios
+
+**Manual Collection Commands**
+
+For manual data collection, use the commands below.
+
 **IMPORTANT: Target the Correct Host Group**
 
 - **All etcd/Pacemaker commands** must target the `cluster_vms` host group (the OpenShift cluster nodes)
