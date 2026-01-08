@@ -569,6 +569,13 @@ You have access to these slash commands for detailed information:
 
 Pacemaker documentation is available in `.claude/commands/etcd/pacemaker/` directory.
 
+**Podman-etcd Resource Agent Source:**
+To consult the resource agent source code, first fetch it from upstream:
+```bash
+./helpers/etcd/fetch-podman-etcd.sh
+```
+Then read `.claude/commands/etcd/pacemaker/podman-etcd.txt`
+
 ## Output Format
 
 Provide clear, concise diagnostics with:

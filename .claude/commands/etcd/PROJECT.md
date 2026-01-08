@@ -47,7 +47,7 @@ This project is for developing a Claude Code skill that helps troubleshoot etcd 
    - `runtime-reconf-design.md` - Reconfiguration design patterns
 
 3. **Pacemaker Documentation**: `.claude/commands/etcd/pacemaker/`
-   - `podman-etcd.txt` - The resource agent script (reference only, not executable)
+   - `podman-etcd.txt` - Resource agent source code. **Run `./helpers/etcd/fetch-podman-etcd.sh` before reading** to get the latest from upstream.
    - `Pacemaker_Administration/` - Comprehensive Pacemaker administration docs
      - `administrative.rst` - Administrative tasks
      - `agents.rst` - Resource agents overview
@@ -227,7 +227,7 @@ Based on analysis, provide:
 - `revision` - Etcd raft index
 
 ### Pacemaker Resource Agent
-The `podman-etcd.txt` resource agent (reference) manages:
+The `podman-etcd` resource agent (fetched from [upstream](https://github.com/ClusterLabs/resource-agents/blob/main/heartbeat/podman-etcd)) manages:
 - Container lifecycle (start/stop)
 - Member join/leave operations
 - Certificate rotation monitoring

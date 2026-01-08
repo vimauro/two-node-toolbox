@@ -33,7 +33,7 @@ The etcd troubleshooting skill enables Claude to interactively diagnose and reso
 │   ├── failures.md
 │   └── ... (other etcd docs)
 └── pacemaker/                          # Pacemaker documentation
-    ├── podman-etcd.txt                 # The resource agent script (reference)
+    ├── podman-etcd.txt                 # Resource agent (fetched from upstream)
     └── Pacemaker_Administration/       # Pacemaker admin guides
 ```
 
@@ -319,6 +319,13 @@ ansible-playbook helpers/force-new-cluster.yml \
    - `tools.rst` - Command-line tools
    - `agents.rst` - Resource agents
    - `administrative.rst` - Administrative tasks
+
+5. **Podman-etcd Resource Agent** - To consult the resource agent source:
+   ```bash
+   # Fetch latest from upstream before reading
+   ./helpers/etcd/fetch-podman-etcd.sh
+   ```
+   Then read `.claude/commands/etcd/pacemaker/podman-etcd.txt`
 
 ## Development and Testing
 

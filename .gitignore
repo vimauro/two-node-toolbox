@@ -9,3 +9,6 @@ deploy/openshift-clusters/vars/kcli.yml
 deploy/openshift-clusters/inventory.ini.*
 logs/*
 helpers/*.rpm
+
+# Fetched from upstream - use helpers/etcd/fetch-podman-etcd.sh to update
+.claude/commands/etcd/pacemaker/podman-etcd.txt
