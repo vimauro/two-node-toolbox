@@ -9,7 +9,7 @@
     build_dir: "/tmp/resource-agents-build"
     rpm_dest_dir: "{{ playbook_dir }}"
     inventory_file: "{{ playbook_dir }}/../deploy/openshift-clusters/inventory.ini"
-    build_only: "{{ build_only | default(false) | bool }}"
+    build_only: false
 
   tasks:
     - name: Verify inventory.ini exists
