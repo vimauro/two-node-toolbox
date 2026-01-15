@@ -59,6 +59,8 @@ Use the detailed [TROUBLESHOOTING_SKILL.md](TROUBLESHOOTING_SKILL.md) when:
 
 ### Activating the Skill
 
+**Prerequisite:** You must run Claude Code CLI from inside a local clone of this repository. The skill files are loaded from the `.claude/commands/` directory.
+
 In Claude Code, reference the troubleshooting skill in your request:
 
 ```

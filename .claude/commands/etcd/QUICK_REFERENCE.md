@@ -103,6 +103,10 @@ ansible cluster_vms -i deploy/openshift-clusters/inventory.ini -m shell -a \
 # Check which node is standalone
 ansible cluster_vms -i deploy/openshift-clusters/inventory.ini -m shell -a \
   "sudo crm_attribute -G -n standalone_node" -b
+
+# Alternative: Query etcd directly for member state
+ansible cluster_vms -i deploy/openshift-clusters/inventory.ini -m shell -a \
+  "sudo podman exec etcd etcdctl member list -w table" -b
 ```
 
 **Fix (RECOMMENDED - Use Automated Playbook):**
@@ -199,52 +203,7 @@ ansible cluster_vms -i deploy/openshift-clusters/inventory.ini -m shell -a \
 
 ---
 
-### 4. Learner Stuck: Member won't promote
-
-**Symptoms:**
-- Member list shows learner with `STATUS: started, IS_LEARNER: true` for >10 minutes
-- OpenShift etcd operator shows "member is a learner, waiting for promotion"
-- No errors in logs, just stuck waiting
-
-**Root Cause:**
-OpenShift etcd operator learner promotion workflow stalled or conditions not met.
-
-**Diagnosis:**
-```bash
-# Check learner status
-ansible cluster_vms -i deploy/openshift-clusters/inventory.ini -m shell -a \
-  "sudo podman exec etcd etcdctl member list -w table" -b
-
-# Check etcd operator conditions
-oc get co etcd -o yaml | grep -A20 "conditions:"
-
-# Check for revision controller errors
-oc logs -n openshift-etcd-operator deployment/etcd-operator | tail -50
-```
-
-**Fix:**
-```bash
-# Manually promote learner (only if stuck >15 minutes)
-# First, get the learner member ID
-ansible <learner-node> -i deploy/openshift-clusters/inventory.ini -m shell -a \
-  "sudo podman exec etcd etcdctl member list -w table | grep true" -b
-
-# Promote the learner (replace MEMBER_ID)
-ansible <any-node> -i deploy/openshift-clusters/inventory.ini -m shell -a \
-  "sudo podman exec etcd etcdctl member promote <MEMBER_ID>" -b
-
-# Restart etcd operator to reset state machine
-oc delete pod -n openshift-etcd-operator -l name=etcd-operator
-```
-
-**Expected Outcome:**
-- Member shows `IS_LEARNER: false` in member list
-- Etcd operator shows "2 of 2 members are available"
-- Cluster becomes Available
-
----
-
-### 5. Certificate Issues
+### 4. Certificate Issues
 
 **Symptoms:**
 - Etcd logs show: "tls: bad certificate" or "certificate has expired"
@@ -285,7 +244,7 @@ oc get pods -n openshift-etcd -w
 
 ---
 
-### 6. Pacemaker Resource Ban
+### 5. Pacemaker Resource Ban
 
 **Symptoms:**
 - `pcs status` shows: `etcd Stopped` on one or both nodes
@@ -328,7 +287,7 @@ ansible cluster_vms -i deploy/openshift-clusters/inventory.ini -m shell -a \
 
 ---
 
-### 7. Stonith/Fencing Failures
+### 6. Stonith/Fencing Failures
 
 **Symptoms:**
 - `pcs status` shows: "UNCLEAN" node status
