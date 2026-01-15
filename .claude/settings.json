@@ -1,0 +1,46 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(tree:*)",
+      "Bash(jq:*)",
+      "Bash(yq:*)",
+
+      "Bash(git log:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+
+      "Bash(ansible cluster_vms -i * -m ping)",
+      "Bash(ansible cluster_vms -i * -m setup)",
+      "Bash(ansible *_master_* -i * -m shell -a 'cat *')",
+      "Bash(ansible *_master_* -i * -m shell -a 'grep *')",
+      "Bash(ansible *_master_* -i * -m shell -a 'tail *')",
+      "Bash(ansible *_master_* -i * -m shell -a 'pcs status*')",
+      "Bash(ansible *_master_* -i * -m shell -a 'pcs resource status*')",
+      "Bash(ansible *_master_* -i * -m shell -a 'podman ps*')",
+      "Bash(ansible *_master_* -i * -m shell -a 'podman exec etcd etcdctl member list*')",
+      "Bash(ansible *_master_* -i * -m shell -a 'podman exec etcd etcdctl endpoint health*')",
+      "Bash(ansible *_master_* -i * -m shell -a 'podman exec etcd etcdctl endpoint status*')",
+      "Bash(ansible *_master_* -i * -m shell -a 'crm_attribute --query*')",
+      "Bash(ansible *_master_* -i * -m shell -a 'journalctl*')",
+      "Bash(ansible *_master_* -i * -m shell -a 'systemctl status*')",
+
+      "Bash(source deploy/openshift-clusters/proxy.env && oc get*)",
+      "Bash(source deploy/openshift-clusters/proxy.env && oc describe*)",
+      "Bash(source deploy/openshift-clusters/proxy.env && oc logs*)",
+
+      "Bash(helpers/etcd/validate-cluster-access.sh)",
+
+      "Read(/tmp/etcd-diagnostics-*/**)",
+      "Read(/tmp/ansible-validation.log)"
+    ],
+    "deny": []
+  }
+}

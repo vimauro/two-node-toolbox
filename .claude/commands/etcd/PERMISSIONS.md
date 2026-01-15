@@ -2,6 +2,14 @@
 
 This document defines the permission grants for the etcd troubleshooting skill to enable faster diagnostics without requiring user approval for read-only operations.
 
+## Active Configuration
+
+The project includes a `.claude/settings.json` file with pre-configured permissions for etcd troubleshooting. These permissions are automatically applied when using Claude Code in this repository.
+
+**Note:** These permissions apply project-wide (not skill-specific) because Claude Code's permission system operates at the project level. However, since this repository is dedicated to two-node toolbox operations, granting read-only diagnostic permissions is appropriate for all use cases.
+
+To customize permissions for your environment, create or edit `.claude/settings.local.json` (gitignored) to override project defaults.
+
 ## Permission Philosophy
 
 **Automatic (No User Approval Required):**
@@ -139,37 +147,14 @@ ansible * -m shell -a "reboot*"              # Requires approval
 
 ## Usage in Claude Code
 
-To apply these permissions, they need to be added to the Claude Code system configuration. This is typically done in one of two ways:
+Permissions are configured in `.claude/settings.json` at the repository root. This file is committed to git and provides project-wide defaults.
 
-1. **Project-level**: In `.claude/settings.json` or project configuration
-2. **User-level**: In global Claude Code settings
+**Customizing permissions:**
 
-### Example Configuration Format
+1. **Project-level** (shared): Edit `.claude/settings.json`
+2. **User-level** (personal): Create `.claude/settings.local.json` to override
 
-```json
-{
-  "autoApprove": {
-    "bash": [
-      "cat:*",
-      "tail:*",
-      "head:*",
-      "grep:*",
-      "ls:*",
-      "git status:*",
-      "git log:*",
-      "ansible cluster_vms -i * -m ping",
-      "source deploy/openshift-clusters/proxy.env && oc get*"
-    ],
-    "read": [
-      "/tmp/etcd-diagnostics-*/**",
-      "/tmp/ansible-validation.log",
-      "deploy/openshift-clusters/inventory.ini",
-      "deploy/openshift-clusters/proxy.env",
-      ".claude/commands/etcd/**"
-    ]
-  }
-}
-```
+See `.claude/settings.json` for the current active configuration.
 
 ## Safety Considerations
 
