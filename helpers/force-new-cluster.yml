@@ -1,0 +1,277 @@
+---
+# Force New Cluster - Configure CIB attributes for etcd cluster recovery
+# Original shell script by Carlo Lobrano https://gitlab.cee.redhat.com/clobrano/2no-lab/-/blob/main/bin/force-new-cluster
+# Ansible conversion for two-node-toolbox project
+
+- name: Force New Cluster - Configure CIB attributes for etcd cluster recovery
+  hosts: cluster_vms
+  gather_facts: true
+  become: true
+
+  vars:
+    snapshot_name: "etcd-snapshot-{{ ansible_date_time.iso8601_basic_short }}.db"
+    snapshot_dir: "/var/home/core"
+    snapshot_retention_count: 2
+
+  pre_tasks:
+    - name: Validate cluster_vms group has exactly 2 nodes
+      run_once: true
+      delegate_to: localhost
+      ansible.builtin.assert:
+        that:
+          - groups['cluster_vms'] | length == 2
+        fail_msg: "This playbook requires exactly 2 nodes in the cluster_vms group. Found {{ groups['cluster_vms'] | length }} nodes."
+        success_msg: "Cluster has required 2 nodes: {{ groups['cluster_vms'] | join(', ') }}"
+
+    - name: Gather hostnames from all nodes
+      ansible.builtin.command: hostname
+      register: hostname_result
+      changed_when: false
+
+    - name: Set hostname facts
+      ansible.builtin.set_fact:
+        node_hostname: "{{ hostname_result.stdout }}"
+
+    # Detect actual etcd leader by checking which node has a running etcd that is the leader
+    - name: Check if etcd container is running
+      ansible.builtin.command: podman ps --filter name=etcd --filter status=running --format "{{ '{{' }}.Names{{ '}}' }}"
+      register: etcd_running
+      changed_when: false
+      failed_when: false
+
+    - name: Check etcd leader status if container is running
+      ansible.builtin.shell:
+        cmd: |
+          output=$(podman exec etcd etcdctl endpoint status -w json 2>/dev/null)
+          member_id=$(echo "$output" | grep -o '"member_id":[0-9]*' | head -1 | cut -d: -f2)
+          leader_id=$(echo "$output" | grep -o '"leader":[0-9]*' | head -1 | cut -d: -f2)
+          if [ -n "$member_id" ] && [ -n "$leader_id" ] && [ "$member_id" = "$leader_id" ]; then
+            echo "true"
+          else
+            echo "false"
+          fi
+      register: etcd_leader_check
+      changed_when: false
+      failed_when: false
+      when: etcd_running.stdout | length > 0
+
+    - name: Set node leader status fact
+      ansible.builtin.set_fact:
+        is_etcd_leader: "{{ (etcd_leader_check.stdout | default('false')) | trim == 'true' }}"
+        etcd_is_running: "{{ etcd_running.stdout | length > 0 }}"
+
+    - name: Determine leader node based on etcd status
+      run_once: true
+      block:
+        - name: Find node that is etcd leader
+          ansible.builtin.set_fact:
+            detected_leader: "{{ item }}"
+          loop: "{{ groups['cluster_vms'] }}"
+          when: hostvars[item]['is_etcd_leader'] | default(false) | bool
+
+        - name: Set leader to first node with running etcd if no leader found
+          ansible.builtin.set_fact:
+            detected_leader: "{{ item }}"
+          loop: "{{ groups['cluster_vms'] }}"
+          when:
+            - detected_leader is not defined
+            - hostvars[item]['etcd_is_running'] | default(false) | bool
+
+        - name: Fall back to first inventory node if no etcd is running
+          ansible.builtin.set_fact:
+            detected_leader: "{{ groups['cluster_vms'][0] }}"
+          when: detected_leader is not defined
+
+        - name: Set follower node
+          ansible.builtin.set_fact:
+            detected_follower: "{{ groups['cluster_vms'] | difference([detected_leader]) | first }}"
+
+    - name: Set leader and follower facts for all hosts
+      ansible.builtin.set_fact:
+        leader_node: "{{ hostvars[groups['cluster_vms'][0]]['detected_leader'] }}"
+        follower_node: "{{ hostvars[groups['cluster_vms'][0]]['detected_follower'] }}"
+
+    - name: Display detected leader and follower
+      run_once: true
+      ansible.builtin.debug:
+        msg: |
+          Detected etcd leader: {{ leader_node }} ({{ hostvars[leader_node]['node_hostname'] }})
+          Detected follower: {{ follower_node }} ({{ hostvars[follower_node]['node_hostname'] }})
+          Leader detection method: {% if hostvars[leader_node]['is_etcd_leader'] | default(false) %}etcd endpoint status{% elif hostvars[leader_node]['etcd_is_running'] | default(false) %}running etcd container{% else %}inventory order (no etcd running){% endif %}
+
+    - name: Register leader hostname
+      ansible.builtin.set_fact:
+        leader_hostname: "{{ hostvars[leader_node]['node_hostname'] }}"
+
+    - name: Register follower hostname
+      ansible.builtin.set_fact:
+        follower_hostname: "{{ hostvars[follower_node]['node_hostname'] }}"
+
+  tasks:
+    - name: Disable stonith on leader node
+      ansible.builtin.command: pcs property set stonith-enabled=false
+      delegate_to: "{{ leader_node }}"
+      run_once: true
+      changed_when: true
+
+    - name: Disable etcd resource on leader node
+      delegate_to: "{{ leader_node }}"
+      run_once: true
+      block:
+        - name: Disable etcd resource
+          ansible.builtin.command: pcs resource disable etcd
+          changed_when: true
+
+        - name: Wait for etcd to stop
+          ansible.builtin.shell: |
+            pcs status resources | grep etcd -A 1 | grep -E 'Started|Stopping'
+          register: etcd_stopping
+          changed_when: false
+          failed_when: false
+          until: etcd_stopping.rc != 0
+          retries: 60
+          delay: 5
+
+        - name: Display etcd stopped confirmation
+          ansible.builtin.debug:
+            msg: "Etcd resource is now stopped."
+
+    - name: Clear CIB attributes on all nodes
+      block:
+        - name: Delete learner_node attribute
+          ansible.builtin.command: crm_attribute --delete --name "learner_node"
+          failed_when: false
+          changed_when: true
+
+        - name: Delete standalone_node attribute
+          ansible.builtin.command: crm_attribute --delete --name "standalone_node"
+          failed_when: false
+          changed_when: true
+
+    - name: Clear force_new_cluster attribute from leader node (all scopes)
+      delegate_to: "{{ leader_node }}"
+      run_once: true
+      block:
+        - name: Clear reboot-lifetime force_new_cluster from leader
+          ansible.builtin.command: crm_attribute --delete --node "{{ leader_hostname }}" --lifetime reboot --name "force_new_cluster"
+          failed_when: false
+          changed_when: true
+
+        - name: Clear status force_new_cluster from leader using attrd_updater
+          ansible.builtin.command: attrd_updater -D -n force_new_cluster -N "{{ leader_hostname }}"
+          failed_when: false
+          changed_when: true
+
+    - name: Clear force_new_cluster attribute from follower node (all scopes)
+      delegate_to: "{{ follower_node }}"
+      run_once: true
+      block:
+        - name: Clear reboot-lifetime force_new_cluster from follower
+          ansible.builtin.command: crm_attribute --delete --node "{{ follower_hostname }}" --lifetime reboot --name "force_new_cluster"
+          failed_when: false
+          changed_when: true
+
+        - name: Clear status force_new_cluster from follower using attrd_updater
+          ansible.builtin.command: attrd_updater -D -n force_new_cluster -N "{{ follower_hostname }}"
+          failed_when: false
+          changed_when: true
+
+    - name: Set force_new_cluster attribute on leader node
+      ansible.builtin.command: crm_attribute --lifetime reboot --node "{{ leader_hostname }}" --name "force_new_cluster" --update "{{ leader_hostname }}"
+      delegate_to: "{{ leader_node }}"
+      run_once: true
+      changed_when: true
+
+    - name: Verify CIB attributes on leader node
+      delegate_to: "{{ leader_node }}"
+      run_once: true
+      block:
+        - name: Query CIB attributes on leader
+          ansible.builtin.command: crm_attribute --query --node "{{ leader_hostname }}"
+          register: leader_cib_attrs
+          changed_when: false
+
+        - name: Check for unexpected standalone or learner attributes on leader
+          ansible.builtin.assert:
+            that:
+              - "'standalone' not in leader_cib_attrs.stdout"
+              - "'learner' not in leader_cib_attrs.stdout"
+            fail_msg: |
+              Unexpected standalone or learner attributes on {{ leader_hostname }}
+              Output: {{ leader_cib_attrs.stdout }}
+
+        - name: Query reboot-lifetime CIB attributes on leader
+          ansible.builtin.command: crm_attribute --query --lifetime reboot --node "{{ leader_hostname }}"
+          register: leader_reboot_attrs
+          changed_when: false
+
+        - name: Verify force_new_cluster attribute is present on leader
+          ansible.builtin.assert:
+            that:
+              - "'force_new_cluster' in leader_reboot_attrs.stdout"
+            fail_msg: |
+              Missing force_new_cluster attribute on {{ leader_hostname }}
+              Output: {{ leader_reboot_attrs.stdout }}
+
+    - name: Verify CIB attributes on follower node
+      delegate_to: "{{ follower_node }}"
+      run_once: true
+      block:
+        - name: Query CIB attributes on follower
+          ansible.builtin.command: crm_attribute --query --node "{{ follower_hostname }}"
+          register: follower_cib_attrs
+          changed_when: false
+
+        - name: Check for unexpected standalone or learner attributes on follower
+          ansible.builtin.assert:
+            that:
+              - "'standalone' not in follower_cib_attrs.stdout"
+              - "'learner' not in follower_cib_attrs.stdout"
+            fail_msg: |
+              Unexpected standalone or learner attributes on {{ follower_hostname }}
+              Output: {{ follower_cib_attrs.stdout }}
+
+        - name: Query reboot-lifetime CIB attributes on follower (with proper scope filter)
+          ansible.builtin.shell: |
+            crm_attribute --query --lifetime reboot --node "{{ follower_hostname }}" --name "force_new_cluster" 2>&1 | grep 'scope=reboot' || true
+          register: follower_reboot_attrs
+          changed_when: false
+
+        - name: Verify force_new_cluster attribute is NOT present on follower in reboot scope
+          ansible.builtin.assert:
+            that:
+              - follower_reboot_attrs.stdout == ""
+            fail_msg: |
+              Unexpected force_new_cluster attribute (reboot scope) on {{ follower_hostname }}
+              Output: {{ follower_reboot_attrs.stdout }}
+
+    - name: Enable etcd resource on leader node
+      ansible.builtin.command: pcs resource enable etcd
+      delegate_to: "{{ leader_node }}"
+      run_once: true
+      changed_when: true
+
+    - name: Cleanup etcd resource to restore the cluster
+      ansible.builtin.command: pcs resource cleanup etcd
+      delegate_to: "{{ leader_node }}"
+      run_once: true
+      changed_when: true
+
+    - name: Re-enable stonith on leader node
+      ansible.builtin.command: pcs property set stonith-enabled=true
+      delegate_to: "{{ leader_node }}"
+      run_once: true
+      changed_when: true
+      register: stonith_enable
+      failed_when: false
+
+    - name: Display stonith re-enable status
+      ansible.builtin.debug:
+        msg: "{% if stonith_enable.rc != 0 %}⚠ WARNING: Could not re-enable stonith!{% else %}✓ Stonith re-enabled successfully{% endif %}"
+      run_once: true
+
+  post_tasks:
+    - name: Display completion message
+      ansible.builtin.debug:
+        msg: "✓ Force new cluster operation completed. Etcd cluster recovery initiated."
+      run_once: true

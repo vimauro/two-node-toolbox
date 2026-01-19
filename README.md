@@ -71,3 +71,6 @@ If you're using [Claude Code](https://claude.ai/code), use the `/setup` command 
 - Validating your setup
 
 Run `/setup` to begin, or `/setup <method>` to configure a specific deployment method (aws, external, kcli, dev-scripts).
+## Troubleshooting with Claude Code
+
+If you're using [Claude Code](https://claude.ai/code), it can help you troubleshoot etcd issues on two-node fencing clusters. Simply ask Claude to diagnose your etcd problems and it will automatically collect diagnostics, analyze the cluster state, and recommend remediation steps. See [.claude/commands/etcd/README.md](.claude/commands/etcd/README.md) for details.
