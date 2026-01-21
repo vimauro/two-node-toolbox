@@ -37,6 +37,23 @@ ansible cluster_vms -i deploy/openshift-clusters/inventory.ini -m shell -a "sudo
 oc get co etcd -o yaml | grep -A10 "status:"
 ```
 
+**Check workload distribution during failover:**
+```bash
+# Quick check: functional pods per node (uses simple grep)
+oc get pods -owide -n <namespace> | grep Running | grep <node_name> | wc -l
+
+# Detailed analysis: shows READY status to filter stale pod references
+oc get pods -n <namespace> \
+  -o custom-columns='NAME:.metadata.name,STATUS:.status.phase,READY:.status.conditions[?(@.type=="Ready")].status,NODE:.spec.nodeName'
+
+# Count only functional workloads
+oc get pods -n <namespace> \
+  -o custom-columns='NAME:.metadata.name,STATUS:.status.phase,READY:.status.conditions[?(@.type=="Ready")].status,NODE:.spec.nodeName' \
+  | grep 'True.<node_name>' | wc -l
+```
+
+**💡 Key Insight:** During failover scenarios, pod status can show stale references. Use `READY=True` filter or the simple `grep` approach to see actual functional workloads. `STATUS=Running` + `READY=False` indicates stale pod references from failed nodes.
+
 ---
 
 ## Common Issues
