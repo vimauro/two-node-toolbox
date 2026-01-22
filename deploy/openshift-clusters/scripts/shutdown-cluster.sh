@@ -59,6 +59,20 @@ fi
 
 echo "Found dev-scripts directory. Performing orderly shutdown of cluster VMs..."
 
+# Refresh certificates before shutdown to maximize validity window on next startup
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
+REFRESH_CERTS_SCRIPT="${REPO_ROOT}/helpers/refresh-certificates.sh"
+PROXY_ENV="${SCRIPT_DIR}/../proxy.env"
+
+if [[ -x "${REFRESH_CERTS_SCRIPT}" && -f "${PROXY_ENV}" ]]; then
+    echo ""
+    echo "Refreshing certificates before shutdown..."
+    "${REFRESH_CERTS_SCRIPT}" --proxy-env "${PROXY_ENV}" || echo "Warning: Certificate refresh failed. Proceeding with shutdown."
+    echo ""
+else
+    echo "Skipping certificate refresh (script or proxy.env not found)."
+fi
+
 # Perform orderly shutdown of the cluster VMs
 ssh "$(cat "${SHARED_DIR}/ssh_user")@${HOST_PUBLIC_IP}" << 'EOF'
     set -e
