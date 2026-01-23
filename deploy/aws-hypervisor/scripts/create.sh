@@ -8,8 +8,23 @@ set -o nounset
 set -o errexit
 set -o pipefail
 
-#Save stacks events
-trap 'save_stack_events' EXIT TERM INT
+#Save stacks events and cleanup capacity reservation on failure
+trap 'save_stack_events; cleanup_capacity_on_error' EXIT TERM INT
+
+# Cleanup function for capacity reservation on error
+function cleanup_capacity_on_error() {
+    set +o errexit
+    local reservation_file="${SCRIPT_DIR}/../${SHARED_DIR}/capacity-reservation-id"
+    # Only cleanup if stack creation didn't complete successfully
+    if [[ -f "${reservation_file}" && ! -f "${SCRIPT_DIR}/../${SHARED_DIR}/.stack-created" ]]; then
+        local reservation_id
+        reservation_id=$(cat "${reservation_file}")
+        cancel_capacity_reservation "${reservation_id}" "${REGION}"
+        rm -f "${reservation_file}"
+        rm -f "${SCRIPT_DIR}/../${SHARED_DIR}/availability-zone"
+    fi
+    set -o errexit
+}
 
 mkdir -p "${SCRIPT_DIR}/../${SHARED_DIR}"
 
@@ -41,6 +56,28 @@ echo "ec2-user" > "${SCRIPT_DIR}/../${SHARED_DIR}/ssh_user"
 echo -e "AMI ID: $RHEL_HOST_AMI"
 echo -e "Machine Type: $EC2_INSTANCE_TYPE"
 
+# Create capacity reservation to validate and guarantee instance availability
+CAPACITY_RESERVATION_ID=""
+AVAILABILITY_ZONE=""
+
+if [[ "${ENABLE_CAPACITY_RESERVATION}" == "true" ]]; then
+    if reservation_result=$(create_capacity_reservation "${EC2_INSTANCE_TYPE}" "${REGION}"); then
+        CAPACITY_RESERVATION_ID=$(echo "${reservation_result}" | awk '{print $1}')
+        AVAILABILITY_ZONE=$(echo "${reservation_result}" | awk '{print $2}')
+
+        # Store for cleanup
+        echo "${CAPACITY_RESERVATION_ID}" > "${SCRIPT_DIR}/../${SHARED_DIR}/capacity-reservation-id"
+        echo "${AVAILABILITY_ZONE}" > "${SCRIPT_DIR}/../${SHARED_DIR}/availability-zone"
+
+        msg_info "Capacity guaranteed in ${AVAILABILITY_ZONE}"
+    else
+        msg_err "Failed to reserve capacity. Aborting deployment."
+        exit 1
+    fi
+else
+    msg_info "Capacity reservation disabled, skipping pre-flight check"
+fi
+
 ec2Type="VirtualMachine"
 if [[ "$EC2_INSTANCE_TYPE" =~ c[0-9]+[gn].metal ]]; then
   ec2Type="MetalMachine"
@@ -53,6 +90,8 @@ Description: Template for RHEL machine Launch
 Conditions:
 # If IsMetal parameter == metal, then do not add a secondary volume
   AddSecondaryVolume: !Not [!Equals [!Ref EC2Type, 'MetalMachine']]
+  UseCapacityReservation: !Not [!Equals [!Ref CapacityReservationId, '']]
+  UseSpecificAZ: !Not [!Equals [!Ref AvailabilityZone, '']]
 Mappings:
  VolumeSize:
    MetalMachine:
@@ -91,6 +130,14 @@ Parameters:
   PublicKeyString:
     Type: String
     Description: The public key used to connect to the EC2 instance
+  CapacityReservationId:
+    Type: String
+    Description: EC2 Capacity Reservation ID (optional)
+    Default: ""
+  AvailabilityZone:
+    Type: String
+    Description: Specific AZ for instance placement (optional)
+    Default: ""
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -144,6 +191,7 @@ Resources:
       VpcId: !Ref RHELVPC
       CidrBlock: !Ref PublicSubnetCidr
       MapPublicIpOnLaunch: true
+      AvailabilityZone: !If [UseSpecificAZ, !Ref AvailabilityZone, !Ref 'AWS::NoValue']
       Tags:
         - Key: Name
           Value: RHELPublicSubnet
@@ -277,6 +325,11 @@ Resources:
       ImageId: !Ref AmiId
       IamInstanceProfile: !Ref RHELInstanceProfile
       InstanceType: !Ref HostInstanceType
+      CapacityReservationSpecification: !If
+        - UseCapacityReservation
+        - CapacityReservationTarget:
+            CapacityReservationId: !Ref CapacityReservationId
+        - !Ref AWS::NoValue
       NetworkInterfaces:
       - AssociatePublicIpAddress: "False"
         DeviceIndex: "0"
@@ -362,7 +415,9 @@ aws --region "$REGION" cloudformation create-stack --stack-name "${STACK_NAME}" 
         "ParameterKey=Machinename,ParameterValue=${STACK_NAME}"  \
         "ParameterKey=AmiId,ParameterValue=${RHEL_HOST_AMI}" \
         "ParameterKey=EC2Type,ParameterValue=${ec2Type}" \
-        "ParameterKey=PublicKeyString,ParameterValue=$(cat "${SSH_PUBLIC_KEY}")"
+        "ParameterKey=PublicKeyString,ParameterValue=$(cat "${SSH_PUBLIC_KEY}")" \
+        "ParameterKey=CapacityReservationId,ParameterValue=${CAPACITY_RESERVATION_ID}" \
+        "ParameterKey=AvailabilityZone,ParameterValue=${AVAILABILITY_ZONE}"
 
 echo "Created stack"
 
@@ -401,3 +456,7 @@ copy_configure_script
 set_aws_machine_hostname
 
 scp "$(cat "${SCRIPT_DIR}/../${SHARED_DIR}/ssh_user")@${HOST_PUBLIC_IP}:/tmp/init_output.txt" "${SCRIPT_DIR}/../${SHARED_DIR}/init_output.txt"
+
+# Mark stack creation as successful (prevents capacity cleanup on exit)
+touch "${SCRIPT_DIR}/../${SHARED_DIR}/.stack-created"
+msg_info "Instance creation completed successfully"
