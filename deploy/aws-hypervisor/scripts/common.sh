@@ -31,6 +31,7 @@ function msg_info() {
 }
 
 function aws_ec2_describe_images() {
+  # shellcheck disable=SC2153 # REGION is an env var from instance.env, not a misspelling of local 'region'
   aws ec2 describe-images \
   --query 'reverse(sort_by(Images, &CreationDate))[].[Name, ImageId, CreationDate]' \
   --filters "Name=name,Values=RHEL-${RHEL_VERSION}.*GA*${RHEL_HOST_ARCHITECTURE}*" \
@@ -87,8 +88,9 @@ function set_aws_machine_hostname() {
 function create_capacity_reservation() {
     local instance_type="$1"
     local region="$2"
+    local instance_platform="${3:-Red Hat Enterprise Linux}"
 
-    msg_info "Checking EC2 capacity availability for ${instance_type} in ${region}..."
+    msg_info "Checking EC2 capacity availability for ${instance_type} (${instance_platform}) in ${region}..."
 
     # Auto-detect available AZs in region
     local az_list
@@ -120,7 +122,7 @@ function create_capacity_reservation() {
         reservation_output=$(aws ec2 create-capacity-reservation \
             --region "${region}" \
             --instance-type "${instance_type}" \
-            --instance-platform "Linux/UNIX" \
+            --instance-platform "${instance_platform}" \
             --instance-count 1 \
             --availability-zone "${az}" \
             --instance-match-criteria "targeted" \
