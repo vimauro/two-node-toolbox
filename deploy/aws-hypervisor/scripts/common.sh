@@ -12,6 +12,7 @@ export RHEL_VERSION="${RHEL_VERSION:-9.6}"
 
 # Capacity reservation defaults
 export ENABLE_CAPACITY_RESERVATION="${ENABLE_CAPACITY_RESERVATION:-true}"
+export CAPACITY_RESERVATION_DURATION_MINUTES="${CAPACITY_RESERVATION_DURATION_MINUTES:-60}"
 
 readonly COLOR_RED='\033[0;31m'
 readonly COLOR_YELLOW='\033[0;33m'
@@ -79,8 +80,9 @@ function set_aws_machine_hostname() {
     ssh "$instance_ip" "sudo hostnamectl set-hostname aws-$STACK_NAME"
 }
 
-# Creates a capacity reservation and returns the reservation ID and availability zone.
+# Creates a time-limited capacity reservation and returns the reservation ID and availability zone.
 # Auto-detects the first available AZ in the configured region.
+# The reservation expires after CAPACITY_RESERVATION_DURATION_MINUTES (default: 60 minutes).
 # Exits with error if capacity is unavailable.
 # Usage: result=$(create_capacity_reservation "instance_type" "region")
 #        reservation_id=$(echo "$result" | awk '{print $1}')
@@ -89,8 +91,14 @@ function create_capacity_reservation() {
     local instance_type="$1"
     local region="$2"
     local instance_platform="${3:-Red Hat Enterprise Linux}"
+    local duration_minutes="${CAPACITY_RESERVATION_DURATION_MINUTES:-60}"
+
+    # Calculate end date (current time + duration)
+    local end_date
+    end_date=$(date -u -d "+${duration_minutes} minutes" '+%Y-%m-%dT%H:%M:%SZ')
 
     msg_info "Checking EC2 capacity availability for ${instance_type} (${instance_platform}) in ${region}..."
+    msg_info "Reservation will expire at ${end_date} (${duration_minutes} minutes from now)"
 
     # Auto-detect available AZs in region
     local az_list
@@ -126,6 +134,8 @@ function create_capacity_reservation() {
             --instance-count 1 \
             --availability-zone "${az}" \
             --instance-match-criteria "targeted" \
+            --end-date-type "limited" \
+            --end-date "${end_date}" \
             --output json \
             --no-cli-pager 2>&1)
         create_status=$?
