@@ -14,6 +14,8 @@
     clean_needed: false
     # Cleanup reason for user information
     cleanup_reason: "none"
+    # Installation method - set by redeploy-cluster.sh from previous state, defaults to ipi
+    method: "ipi"
 
   # --- Pre-flight Checks and Confirmation ---
   pre_tasks:
