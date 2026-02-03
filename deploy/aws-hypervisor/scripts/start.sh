@@ -8,6 +8,37 @@ set -o nounset
 set -o errexit
 set -o pipefail
 
+# Start instance with capacity error detection
+# Provides actionable guidance if start fails due to insufficient capacity
+function start_instance_with_capacity_check() {
+    local instance_id="$1"
+    local region="$2"
+
+    local output
+    set +e
+    output=$(aws --region "${region}" ec2 start-instances --instance-ids "${instance_id}" --no-cli-pager 2>&1)
+    local status=$?
+    set -e
+
+    if [[ ${status} -ne 0 ]]; then
+        if echo "${output}" | grep -qi "InsufficientInstanceCapacity\|InsufficientCapacity\|capacity"; then
+            msg_err "Cannot start instance: No capacity available in this Availability Zone"
+            msg_err ""
+            msg_err "EC2 instances are permanently bound to their original AZ and cannot be moved."
+            msg_err "The AZ where this instance was created currently has no available capacity"
+            msg_err "for this instance type."
+            msg_err ""
+            msg_err "To resolve, destroy and recreate the instance (will find an AZ with capacity):"
+            msg_err "  make destroy && make create"
+            msg_err ""
+            msg_err "Note: This will delete any data on the hypervisor (clusters, images, etc.)"
+            exit 1
+        fi
+        msg_err "Failed to start instance: ${output}"
+        exit 1
+    fi
+}
+
 # Check if the instance exists and get its ID
 if [[ ! -f "${SCRIPT_DIR}/../${SHARED_DIR}/aws-instance-id" ]]; then
     echo "Error: No instance found. Please run 'make deploy' first."
@@ -27,7 +58,7 @@ case "${INSTANCE_STATE}" in
         ;;
     "stopped")
         echo "Starting instance..."
-        aws --region "${REGION}" ec2 start-instances --instance-ids "${INSTANCE_ID}" --no-cli-pager
+        start_instance_with_capacity_check "${INSTANCE_ID}" "${REGION}"
         echo "Waiting for instance to start..."
         aws --region "${REGION}" ec2 wait instance-running --instance-ids "${INSTANCE_ID}" --no-cli-pager
         echo "Waiting for instance to be ready..."
@@ -37,7 +68,7 @@ case "${INSTANCE_STATE}" in
         echo "Instance is currently stopping. Waiting for it to stop completely..."
         aws --region "${REGION}" ec2 wait instance-stopped --instance-ids "${INSTANCE_ID}" --no-cli-pager
         echo "Now starting instance..."
-        aws --region "${REGION}" ec2 start-instances --instance-ids "${INSTANCE_ID}" --no-cli-pager
+        start_instance_with_capacity_check "${INSTANCE_ID}" "${REGION}"
         echo "Waiting for instance to start..."
         aws --region "${REGION}" ec2 wait instance-running --instance-ids "${INSTANCE_ID}" --no-cli-pager
         echo "Waiting for instance to be ready..."
