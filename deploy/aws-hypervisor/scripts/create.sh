@@ -142,4 +142,28 @@ scp "$(cat "${SCRIPT_DIR}/../${SHARED_DIR}/ssh_user")@${HOST_PUBLIC_IP}:/tmp/ini
 
 # Mark stack creation as successful (prevents capacity cleanup on exit)
 touch "${SCRIPT_DIR}/../${SHARED_DIR}/.stack-created"
+
+# Release capacity reservation now that instance is running
+# The reservation served its purpose (guaranteeing capacity at creation time)
+# Releasing it allows the instance to start/stop freely without reservation dependency
+if [[ -n "${CAPACITY_RESERVATION_ID}" ]]; then
+    msg_info "Releasing capacity reservation (no longer needed)..."
+
+    # Remove the instance's association with the specific reservation
+    # This changes the instance to use "open" preference (on-demand capacity)
+    aws --region "${REGION}" ec2 modify-instance-capacity-reservation-attributes \
+        --instance-id "${INSTANCE_ID}" \
+        --capacity-reservation-specification "CapacityReservationPreference=open" \
+        --no-cli-pager || msg_warning "Failed to modify instance capacity reservation attributes"
+
+    # Cancel the capacity reservation
+    cancel_capacity_reservation "${CAPACITY_RESERVATION_ID}" "${REGION}"
+
+    # Clean up local files
+    rm -f "${SCRIPT_DIR}/../${SHARED_DIR}/capacity-reservation-id"
+    rm -f "${SCRIPT_DIR}/../${SHARED_DIR}/availability-zone"
+
+    msg_info "Capacity reservation released successfully"
+fi
+
 msg_info "Instance creation completed successfully"
