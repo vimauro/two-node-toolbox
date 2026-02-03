@@ -49,6 +49,7 @@ INSTANCE_ID=$(cat "${SCRIPT_DIR}/../${SHARED_DIR}/aws-instance-id")
 echo "Starting instance ${INSTANCE_ID}..."
 
 # Check current instance state
+# shellcheck disable=SC2153 # REGION is sourced from instance.env via common.sh, not a misspelling of local 'region'
 INSTANCE_STATE=$(aws --region "${REGION}" ec2 describe-instances --instance-ids "${INSTANCE_ID}" --query 'Reservations[0].Instances[0].State.Name' --output text --no-cli-pager)
 echo "Current instance state: ${INSTANCE_STATE}"
 
