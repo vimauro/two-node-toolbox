@@ -55,7 +55,7 @@ if aws --region "$REGION" cloudformation describe-stacks --stack-name "${STACK_N
             ;;
         2)
             echo "Aborted."
-            exit 0
+            exit 1
             ;;
         *)
             echo "Invalid option. Aborted."
