@@ -85,17 +85,17 @@ fi
 case "${METHOD}" in
     ipi)
         PLAYBOOK="setup.yml"
-        EXTRA_VARS="-e topology=${TOPOLOGY} -e interactive_mode=false"
+        EXTRA_VARS=(-e "topology=${TOPOLOGY}" -e "interactive_mode=false")
         METHOD_DISPLAY="IPI"
         ;;
     agent)
         PLAYBOOK="setup.yml"
-        EXTRA_VARS="-e topology=${TOPOLOGY} -e interactive_mode=false -e method=agent"
+        EXTRA_VARS=(-e "topology=${TOPOLOGY}" -e "interactive_mode=false" -e "method=agent")
         METHOD_DISPLAY="agent"
         ;;
     kcli)
         PLAYBOOK="kcli-install.yml"
-        EXTRA_VARS="-e topology=${TOPOLOGY} -e interactive_mode=false"
+        EXTRA_VARS=(-e "topology=${TOPOLOGY}" -e "interactive_mode=false")
         METHOD_DISPLAY="kcli"
         ;;
 esac
@@ -108,7 +108,7 @@ cd "${DEPLOY_DIR}/openshift-clusters"
 echo "Running Ansible ${PLAYBOOK} playbook with ${TOPOLOGY} topology in non-interactive mode..."
 
 # Run the playbook
-if ansible-playbook "${PLAYBOOK}" ${EXTRA_VARS} -i inventory.ini; then
+if ansible-playbook "${PLAYBOOK}" "${EXTRA_VARS[@]}" -i inventory.ini; then
     echo ""
     echo "OpenShift ${TOPOLOGY} cluster deployment (${METHOD_DISPLAY}) completed successfully!"
     echo ""
