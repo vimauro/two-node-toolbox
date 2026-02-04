@@ -7,6 +7,9 @@ domain: {{ domain }}
 topology: {{ topology }}
 network_type: {{ cluster_network_type }}
 
+# Platform configuration
+platform: {{ platform }}
+
 # OpenShift version
 version: {{ ocp_version }}
 tag: '{{ ocp_tag }}'
@@ -14,7 +17,7 @@ tag: '{{ ocp_tag }}'
 openshift_release_image: {{ openshift_release_image }}
 {% endif %}
 
-# Two-node cluster configuration with fencing
+# Two-node cluster configuration
 ctlplanes: {{ ctlplanes }}
 workers: {{ workers }}
 
@@ -37,16 +40,21 @@ pull_secret: {{ ansible_user_dir }}/pull-secret.json
 keys:
   - {{ ansible_user_dir }}/.ssh/id_ed25519.pub
 
-# BMC/Redfish configuration
+{% if topology == "fencing" %}
+# BMC/Redfish configuration (fencing topology only)
 bmc_user: {{ bmc_user }}
 bmc_password: {{ bmc_password }}
 bmc_driver: {{ bmc_driver }}
 ksushy_ip: {{ ksushy_ip }}
 ksushy_port: {{ ksushy_port }}
+{% endif %}
 
-# Topology-specific configuration
 {% if topology == "arbiter" %}
-enable_arbiter: {{ enable_arbiter }}
+# Arbiter node configuration (TNA topology)
+arbiters: {{ arbiters }}
+arbiter_numcpus: {{ arbiter_numcpus }}
+arbiter_memory: {{ arbiter_memory }}
+arbiter_disk_size: {{ arbiter_disk_size }}
 {% endif %}
 
 # Deployment settings

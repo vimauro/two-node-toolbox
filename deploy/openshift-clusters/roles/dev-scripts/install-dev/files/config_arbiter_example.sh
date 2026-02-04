@@ -17,6 +17,7 @@ export NUM_MASTERS=2
 
 ## BEGIN Agent Specific Install Config Variables
 export AGENT_E2E_TEST_SCENARIO="TNA_IPV4"
+#export AGENT_PLATFORM_TYPE=none
 ## END Agent Specific Install Config Variables
 ####
 
@@ -31,6 +32,6 @@ export OPENSHIFT_CI="true"
 # You can find the latest public images in https://quay.io/repository/openshift-release-dev/ocp-release?tab=tags 
 # and select your preferred version. Public sources can be found at https://mirror.openshift.com/pub/openshift-v4/
 
-export OPENSHIFT_RELEASE_IMAGE=quay.io/openshift-release-dev/ocp-release:4.20.0-ec.4-x86_64
+export OPENSHIFT_RELEASE_IMAGE=quay.io/openshift-release-dev/ocp-release:4.21.0-x86_64
 # Unless you need to override the installer image, this is not needed
 # export OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE=""

@@ -38,8 +38,13 @@ bmc_password: admin123
 bmc_driver: redfish  # "redfish" or "ipmi"
 ksushy_port: 9000
 
-# Arbiter-specific configuration (only used when topology == "arbiter") 
-arbiter_memory: 16384  # Memory for arbiter node
+# Platform configuration: "baremetal" or "none"
+platform: baremetal
+
+# Arbiter-specific configuration (only used when topology == "arbiter")
+arbiter_memory: 8192
+arbiter_numcpus: 2
+arbiter_disk_size: 30
 
 # State management
 cluster_state_dir: "../aws-hypervisor/instance-data"

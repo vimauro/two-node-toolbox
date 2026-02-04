@@ -36,6 +36,34 @@ if [[ -z "${RHEL_HOST_AMI}" ]]; then
   exit 1
 fi
 
+# Check if stack already exists
+if aws --region "$REGION" cloudformation describe-stacks --stack-name "${STACK_NAME}" &>/dev/null; then
+    echo ""
+    echo "WARNING: CloudFormation stack '${STACK_NAME}' already exists."
+    echo ""
+    echo "Options:"
+    echo "  1) Create new stack with random suffix (${STACK_NAME}-XXXX)"
+    echo "  2) Abort"
+    echo ""
+    read -r -p "Choose an option [1/2]: " choice
+
+    case "$choice" in
+        1)
+            RANDOM_SUFFIX=$(head /dev/urandom | tr -dc 'a-z0-9' | head -c 4)
+            STACK_NAME="${STACK_NAME}-${RANDOM_SUFFIX}"
+            echo "Using new stack name: ${STACK_NAME}"
+            ;;
+        2)
+            echo "Aborted."
+            exit 0
+            ;;
+        *)
+            echo "Invalid option. Aborted."
+            exit 1
+            ;;
+    esac
+fi
+
 echo "ec2-user" > "${SCRIPT_DIR}/../${SHARED_DIR}/ssh_user"
 
 echo -e "AMI ID: $RHEL_HOST_AMI"
@@ -388,11 +416,22 @@ echo "${HOST_PRIVATE_IP}" > "${SCRIPT_DIR}/../${SHARED_DIR}/private_address"
 echo "Waiting up to 10 mins for RHEL host to be up."
 timeout 10m aws ec2 wait instance-status-ok --instance-id "${INSTANCE_ID}" --no-cli-pager
 
-sleep 15
-
 # Add the host key to known_hosts to avoid prompts while maintaining security
 echo "Adding host key for $HOST_PUBLIC_IP to known_hosts..."
-ssh-keyscan -H "$HOST_PUBLIC_IP" >> ~/.ssh/known_hosts 2>/dev/null
+max_attempts=5
+retry_delay=5
+for ((attempt=1; attempt<=max_attempts; attempt++)); do
+    if ssh-keyscan -H "$HOST_PUBLIC_IP" >> ~/.ssh/known_hosts 2>/dev/null; then
+        echo "Host key added successfully"
+        break
+    fi
+    if ((attempt < max_attempts)); then
+        echo "SSH not ready (attempt $attempt/$max_attempts), retrying in ${retry_delay}s..."
+        sleep "$retry_delay"
+    else
+        echo "Warning: Could not retrieve host key after $max_attempts attempts"
+    fi
+done
 
 echo "updating sshconfig for aws-hypervisor"
 (cd "${SCRIPT_DIR}/.." && go run main.go -k aws-hypervisor -h "$HOST_PUBLIC_IP")

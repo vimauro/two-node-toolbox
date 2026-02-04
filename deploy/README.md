@@ -111,7 +111,7 @@ $ make destroy
 When running OpenShift clusters on the instance (using dev-scripts), you have several options for managing cluster lifecycle:
 
 **Quick deployment commands:**
-- `make fencing-ipi`, `make arbiter-ipi`, and `make arbiter-agent` provide non-interactive deployment for specific topologies
+- `make fencing-ipi`, `make arbiter-ipi`, `make arbiter-agent`, `make fencing-kcli`, `make arbiter-kcli` provide non-interactive deployment for specific topologies
 - These commands automatically call the underlying setup.yml playbook with the appropriate configuration
 - Useful for automation and when you know exactly which topology you want to deploy
 
@@ -169,8 +169,10 @@ $ make start
 # Quick deployment over clean server
 $ make fencing-ipi    # Deploy fencing topology (IPI method)
 $ make fencing-agent  # Deploy fencing topology (Agent method) (WIP Experimental)
+$ make fencing-kcli   # Deploy fencing topology (kcli method)
 $ make arbiter-ipi    # Deploy arbiter topology (IPI method)
 $ make arbiter-agent  # Deploy arbiter topology (Agent method)
+$ make arbiter-kcli   # Deploy arbiter topology (kcli method)
 ```
 
 #### Option 4: Graceful Cluster Shutdown/Startup (Not recommended due to speed and consistency)

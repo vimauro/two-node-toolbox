@@ -11,6 +11,13 @@
     msg: "topology must be either 'fencing' or 'arbiter'"
   when: topology is not defined or topology not in ['fencing', 'arbiter']
 
+- name: Validate platform value for arbiter topology
+  fail:
+    msg: "platform must be 'none' or 'baremetal' for arbiter topology (got '{{ platform }}')"
+  when:
+    - topology == 'arbiter'
+    - platform not in ['none', 'baremetal']
+
 - name: Validate domain
   fail:
     msg: "domain must be defined and not empty"
