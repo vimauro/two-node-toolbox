@@ -109,7 +109,7 @@ If you're installing a specific openshift release image, you will need to set th
 
 ### Arbiter Configuration (when topology="arbiter")
 
-- `platform`: Platform type - "none" or "baremetal" (required for arbiter)
+- `platform`: Platform type - "none" , "baremetal" or "external" (required for arbiter)
 - `arbiters`: Number of arbiter nodes (default: 1)
 - `arbiter_memory`: Memory for arbiter node in MB (default: 8192)
 - `arbiter_numcpus`: CPU cores for arbiter node (default: 2)

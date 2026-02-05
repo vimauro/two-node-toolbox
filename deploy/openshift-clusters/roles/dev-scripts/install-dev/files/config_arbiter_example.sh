@@ -17,6 +17,9 @@ export NUM_MASTERS=2
 
 ## BEGIN Agent Specific Install Config Variables
 export AGENT_E2E_TEST_SCENARIO="TNA_IPV4"
+# Sets the install-config.yaml's platform type.
+# The default is 'baremetal'.
+# See https://github.com/openshift-metal3/dev-scripts/blob/master/config_example.sh for more details on this variable and its effects.
 #export AGENT_PLATFORM_TYPE=none
 ## END Agent Specific Install Config Variables
 ####

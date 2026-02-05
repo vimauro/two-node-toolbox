@@ -36,34 +36,6 @@ if [[ -z "${RHEL_HOST_AMI}" ]]; then
   exit 1
 fi
 
-# Check if stack already exists
-if aws --region "$REGION" cloudformation describe-stacks --stack-name "${STACK_NAME}" &>/dev/null; then
-    echo ""
-    echo "WARNING: CloudFormation stack '${STACK_NAME}' already exists."
-    echo ""
-    echo "Options:"
-    echo "  1) Create new stack with random suffix (${STACK_NAME}-XXXX)"
-    echo "  2) Abort"
-    echo ""
-    read -r -p "Choose an option [1/2]: " choice
-
-    case "$choice" in
-        1)
-            RANDOM_SUFFIX=$(head /dev/urandom | tr -dc 'a-z0-9' | head -c 4)
-            STACK_NAME="${STACK_NAME}-${RANDOM_SUFFIX}"
-            echo "Using new stack name: ${STACK_NAME}"
-            ;;
-        2)
-            echo "Aborted."
-            exit 1
-            ;;
-        *)
-            echo "Invalid option. Aborted."
-            exit 1
-            ;;
-    esac
-fi
-
 echo "ec2-user" > "${SCRIPT_DIR}/../${SHARED_DIR}/ssh_user"
 
 echo -e "AMI ID: $RHEL_HOST_AMI"

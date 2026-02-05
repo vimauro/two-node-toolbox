@@ -16,7 +16,7 @@
     msg: "platform must be 'none' or 'baremetal' for arbiter topology (got '{{ platform }}')"
   when:
     - topology == 'arbiter'
-    - platform not in ['none', 'baremetal']
+    - platform not in ['none', 'baremetal' , 'external' ]
 
 - name: Validate domain
   fail:
