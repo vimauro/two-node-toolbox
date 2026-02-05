@@ -1,3 +1,4 @@
+---
 - import_tasks: dev-scripts.yml
 
 # Full installation mode (topology change - after realclean)
@@ -16,12 +17,12 @@
     cluster_state_phase: 'deploying'
     installation_method: 'ipi'
     default_playbook_name: 'setup.yml'
-  when: 
+  when:
     - install_dev_mode is defined and install_dev_mode == 'install'
     - not kubeconfig_after_realclean.stat.exists
 
 - import_tasks: create.yml
-  when: 
+  when:
     - install_dev_mode is defined and install_dev_mode == 'install'
     - not kubeconfig_after_realclean.stat.exists
 

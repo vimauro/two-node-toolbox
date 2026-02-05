@@ -1,3 +1,4 @@
+---
 - hosts: metal_machine
   gather_facts: no
   force_handlers: yes

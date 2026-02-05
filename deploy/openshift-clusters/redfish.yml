@@ -56,7 +56,7 @@
             - name: Proxy environment configuration used
               debug:
                 msg: |
-                 
+
                   Using proxy.env file for cluster access configuration.
                   Proxy settings have been applied to the redfish role.
 
@@ -67,10 +67,10 @@
             - name: No proxy environment detected
               debug:
                 msg: |
-                 
+
                   proxy.env file not found. Assuming direct cluster access.
                   The redfish role will run without proxy configuration.
-                  
+
                   Note: Ensure your current environment has:
                   - Valid KUBECONFIG environment variable or ~/.kube/config
                   - Direct network access to the OpenShift cluster API
@@ -84,9 +84,9 @@
       rescue:
         - name: Handle redfish configuration errors
           debug:
-            msg: |
+            msg: |-
               An error occurred while running redfish configuration.
               Error details: {{ ansible_failed_result.msg | default('Unknown error') }}
-              
+
               You can try running manually:
-              source proxy.env && ansible-playbook -i localhost, roles/redfish/tasks/main.yml 
+              source proxy.env && ansible-playbook -i localhost, roles/redfish/tasks/main.yml

@@ -24,4 +24,4 @@
     name: config
     tasks_from: copy_auth
 
-# Deployment completed 
+# Deployment completed

@@ -1,3 +1,4 @@
+---
 - hosts: metal_machine
   roles:
     - dev-scripts/clean

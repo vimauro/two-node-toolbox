@@ -169,7 +169,6 @@
         - name: Build cluster_vms section
           set_fact:
             cluster_vms_section: |
-
               [cluster_vms]
               {% for entry in parsed_vm_entries %}
               {{ entry.name }} ansible_host='{{ entry.ip }}'
@@ -200,6 +199,6 @@
 - name: No cluster VMs found
   when: not (has_cluster_vms | bool)
   debug:
-    msg: |
+    msg: |-
       No cluster VMs found for cluster '{{ test_cluster_name }}'.
       Inventory will not be updated with cluster VMs.

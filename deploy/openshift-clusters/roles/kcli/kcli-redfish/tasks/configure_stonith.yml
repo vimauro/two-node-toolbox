@@ -73,4 +73,4 @@
   when:
     - pcs_stonith_status_result.rc != 0
     - pcs_stonith_create_result is defined
-    - pcs_stonith_create_result.rc != 0 
+    - pcs_stonith_create_result.rc != 0

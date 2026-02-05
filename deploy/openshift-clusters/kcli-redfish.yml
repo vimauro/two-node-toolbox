@@ -58,7 +58,7 @@
             - name: Proxy environment configuration used
               debug:
                 msg: |
-                 
+
                   Using proxy.env file for cluster access configuration.
                   Proxy settings have been applied to the kcli-redfish role.
 
@@ -69,10 +69,10 @@
             - name: No proxy environment detected
               debug:
                 msg: |
-                 
+
                   proxy.env file not found. Assuming direct cluster access.
                   The kcli-redfish role will run without proxy configuration.
-                  
+
                   Note: Ensure your current environment has:
                   - Valid KUBECONFIG environment variable or ~/.kube/config
                   - Direct network access to the OpenShift cluster API
@@ -87,15 +87,15 @@
       rescue:
         - name: Handle kcli-redfish configuration errors
           debug:
-            msg: |
+            msg: |-
               An error occurred while running kcli-redfish configuration.
               Error details: {{ ansible_failed_result.msg | default('Unknown error') }}
-              
+
               Common issues:
               1. Ensure cluster is deployed with kcli and fencing topology
               2. Verify ksushy BMC simulator is running on the hypervisor
               3. Check that kcli clusters are running: kcli list cluster
               4. Verify you're running this on the correct inventory host (hypervisor)
-              
+
               You can override auto-detection with explicit variables:
-              ansible-playbook kcli-redfish.yml -e "test_cluster_name=your-cluster" 
+              ansible-playbook kcli-redfish.yml -e "test_cluster_name=your-cluster"

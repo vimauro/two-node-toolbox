@@ -16,7 +16,7 @@
 - name: Deploy OpenShift cluster with kcli
   command: "{{ kcli_cmd }}"
   register: kcli_deploy_result
-  async: 7200  # 2 hours timeout
+  async: 7200 # 2 hours timeout
   poll: 30
   environment:
     KUBECONFIG: "{{ kubeconfig_path }}"
@@ -24,4 +24,4 @@
 - name: Check deployment status
   fail:
     msg: "kcli deployment failed: {{ kcli_deploy_result.stderr }}"
-  when: kcli_deploy_result.rc != 0 
+  when: kcli_deploy_result.rc != 0

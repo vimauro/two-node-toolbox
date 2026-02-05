@@ -22,7 +22,7 @@
       Hypervisor IP: {{ ksushy_ip }}
       BMC User: {{ bmc_user }}
       BMC Port: {{ ksushy_port }}
-      
+
       Override with: ansible-playbook kcli-redfish.yml -e "test_cluster_name=my-cluster" -e "ksushy_ip=X.X.X.X"
 
 - name: Start ksushy BMC simulator
@@ -41,4 +41,4 @@
       - Hypervisor IP: {{ ksushy_ip }}
       - BMC User: {{ bmc_user }}
       - BMC Password: [{{ 'SET' if bmc_password != '' else 'MISSING' }}]
-  delegate_to: localhost 
+  delegate_to: localhost

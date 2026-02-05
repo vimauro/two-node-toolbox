@@ -47,12 +47,11 @@
 
 - name: Define storage pool
   command: >
-    virsh pool-define-as {{ pool_name }} dir
-    --target {{ pool_path }}
+    virsh pool-define-as {{ pool_name }} dir --target {{ pool_path }}
   become: true
   when: "pool_name not in existing_pools.stdout_lines"
   register: pool_define_result
-  failed_when: 
+  failed_when:
     - pool_define_result.rc != 0
     - "'already exists' not in pool_define_result.stderr"
 
