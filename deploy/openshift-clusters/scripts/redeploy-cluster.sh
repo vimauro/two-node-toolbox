@@ -22,7 +22,6 @@ check_vm_infrastructure_change() {
     local topology="$1"
     local state_file="${SHARED_DIR}/cluster-vm-state.json"
     local current_topology="$topology"
-    local current_installation_method="IPI"
     local previous_topology=""
     local previous_installation_method=""
     local previous_status=""
@@ -42,7 +41,14 @@ check_vm_infrastructure_change() {
             previous_status=$(grep -o '"status":[[:space:]]*"[^"]*"' "$state_file" | cut -d'"' -f4 2>/dev/null || echo "")
         fi
     fi
-    
+
+    # Use previous method if available, default to IPI for first deployment
+    if [[ -n "$previous_installation_method" ]]; then
+        export current_installation_method="$previous_installation_method"
+    else
+        export current_installation_method="IPI"
+    fi
+
     echo "Instance: ${INSTANCE_ID}"
     echo "Previous cluster config: ${previous_topology:-none}/${previous_installation_method:-none} (status: ${previous_status:-unknown})"
     echo "Current cluster config: ${current_topology}/${current_installation_method}"
@@ -208,8 +214,10 @@ fi
 echo "=================================="
 
 # Call ansible in non-interactive mode with all parameters pre-determined
+# Convert method to lowercase for ansible (state file stores uppercase)
 ansible-playbook redeploy.yml -i inventory.ini \
     --extra-vars "topology=${topology}" \
+    --extra-vars "method=${current_installation_method,,}" \
     --extra-vars "vm_cleanup_needed=${vm_cleanup_needed}" \
     --extra-vars "clean_needed=${clean_needed:-false}" \
     --extra-vars "cleanup_reason=${cleanup_reason}" \

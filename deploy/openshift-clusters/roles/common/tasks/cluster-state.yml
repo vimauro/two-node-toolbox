@@ -24,7 +24,7 @@
     content: |
       {
         "topology": "{{ topology }}",
-        "installation_method": "{{ installation_method | upper }}",
+        "installation_method": "{{ method | upper }}",
         "num_masters": {{ num_masters | default(ctlplanes, true) | default(2) }},
         "num_workers": {{ num_workers | default(workers, true) | default(0) }},
         "enable_arbiter": {{ enable_arbiter | default(('true' if topology == 'arbiter' else 'false'), true) | to_json }},
@@ -45,7 +45,7 @@
   debug:
     msg: |
       Cluster state updated to DEPLOYING phase:
-      - Configuration: {{ topology }} cluster ({{ installation_method | upper }} installation)
+      - Configuration: {{ topology }} cluster ({{ method | upper }} installation)
       - Status: DEPLOYING (OpenShift installation in progress)
       - Started at: {{ now(utc=True).isoformat() }}
   run_once: true
@@ -57,7 +57,7 @@
     content: |
       {
         "topology": "{{ topology }}",
-        "installation_method": "{{ installation_method | upper }}",
+        "installation_method": "{{ method | upper }}",
         "num_masters": {{ num_masters | default(ctlplanes, true) | default(2) }},
         "num_workers": {{ num_workers | default(workers, true) | default(0) }},
         "enable_arbiter": {{ enable_arbiter | default(('true' if topology == 'arbiter' else 'false'), true) | to_json }},
@@ -79,7 +79,7 @@
   debug:
     msg: |
       Cluster state updated after successful deployment:
-      - Configuration: {{ topology }} cluster ({{ installation_method | upper }} installation)
+      - Configuration: {{ topology }} cluster ({{ method | upper }} installation)
       - Masters: {{ num_masters | default(ctlplanes, true) | default(2) }}, Workers: {{ num_workers | default(workers, true) | default(0) }}, Arbiter: {% if topology == 'arbiter' %}enabled{% else %}disabled{% endif %}
       - Status: DEPLOYED (cluster successfully running)
       - Deployed at: {{ now(utc=True).isoformat() }}
@@ -92,7 +92,7 @@
     content: |
       {
         "topology": "{{ topology }}",
-        "installation_method": "{{ installation_method | upper }}",
+        "installation_method": "{{ method | upper }}",
         "num_masters": {{ num_masters | default(ctlplanes, true) | default(2) }},
         "num_workers": {{ num_workers | default(workers, true) | default(0) }},
         "enable_arbiter": {{ enable_arbiter | default(('true' if topology == 'arbiter' else 'false'), true) | to_json }},
@@ -115,7 +115,7 @@
   debug:
     msg: |
       Cluster state updated after successful redeploy:
-      - Configuration: {{ topology }} cluster ({{ installation_method | upper }} installation)
+      - Configuration: {{ topology }} cluster ({{ method | upper }} installation)
       - Masters: {{ num_masters | default(ctlplanes, true) | default(2) }}, Workers: {{ num_workers | default(workers, true) | default(0) }}, Arbiter: {% if topology == 'arbiter' %}enabled{% else %}disabled{% endif %}
       - Status: DEPLOYED (cluster successfully redeployed)
       - Redeployed at: {{ now(utc=True).isoformat() }}
