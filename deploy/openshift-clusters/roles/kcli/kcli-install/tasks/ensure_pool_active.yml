@@ -11,7 +11,7 @@
 - name: Start pool if inactive
   command: virsh pool-start {{ pool_name }}
   become: true
-  when: 
+  when:
     - pool_status.rc == 0
     - "'inactive' in pool_status.stdout or 'State:' not in pool_status.stdout or 'running' not in pool_status.stdout"
   register: pool_start_result

@@ -47,6 +47,6 @@
 
 - name: Display final stonith configuration
   debug:
-    msg: |
+    msg: |-
       Final stonith configuration:
-      {{ pcs_stonith_list_result.stdout | default('No stonith resources found') }} 
+      {{ pcs_stonith_list_result.stdout | default('No stonith resources found') }}

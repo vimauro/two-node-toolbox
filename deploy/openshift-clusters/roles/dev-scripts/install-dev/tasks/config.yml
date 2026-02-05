@@ -1,3 +1,4 @@
+---
 - name: Copy pull secrets
   copy:
     dest: "{{dev_scripts_path}}/pull_secret.json"
@@ -17,9 +18,9 @@
 
 - name: Install dependencies
   ansible.builtin.dnf:
-    name: 
-    - podman
-    - runc
-    - containernetworking-plugins
+    name:
+      - podman
+      - runc
+      - containernetworking-plugins
     state: present
   become: true

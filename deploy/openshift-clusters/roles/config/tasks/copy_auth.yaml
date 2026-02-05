@@ -38,7 +38,7 @@
 
 - name: Display auth files location
   debug:
-    msg: |
+    msg: |-
       Cluster authentication files copied to ~/auth/:
       - kubeconfig: ~/auth/kubeconfig
       {% if kubeadmin_password_path is defined %}

@@ -24,4 +24,4 @@
   loop: "{{ bmh_names }}"
   loop_control:
     loop_var: current_bmh_name # This will be used by process_bmh.yml
-  when: bmh_names is defined and bmh_names | length > 0 
+  when: bmh_names is defined and bmh_names | length > 0

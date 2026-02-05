@@ -11,4 +11,4 @@
   include_tasks: infrastructure.yml
 
 - name: Setup and start proxy container
-  include_tasks: container.yml 
+  include_tasks: container.yml

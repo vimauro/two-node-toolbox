@@ -27,8 +27,8 @@
     - name: Install RPM package using rpm-ostree
       command: rpm-ostree -C override replace /var/home/core/{{ rpm_package }}
       register: rpm_ostree_result
-      async: 600  # 10 minutes timeout
-      poll: 30    # check every 30 seconds
+      async: 600 # 10 minutes timeout
+      poll: 30 # check every 30 seconds
       become: yes
 
     - name: Display rpm-ostree command output
@@ -44,11 +44,11 @@
       reboot:
         msg: "Rebooting node to apply rpm-ostree changes"
         connect_timeout: 5
-        reboot_timeout: 600  # Extended timeout for ostree boot
+        reboot_timeout: 600 # Extended timeout for ostree boot
         pre_reboot_delay: 10
-        post_reboot_delay: 60  # Wait longer after reboot
+        post_reboot_delay: 60 # Wait longer after reboot
         test_command: podman exec etcd etcdctl member list
-      throttle: 1  # Reboot one node at a time
+      throttle: 1 # Reboot one node at a time
       become: yes
 
     - name: Gather package facts after reboot

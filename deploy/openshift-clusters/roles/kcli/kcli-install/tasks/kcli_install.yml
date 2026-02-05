@@ -72,7 +72,7 @@
 - name: Verify kcli can see default pool
   fail:
     msg: "kcli cannot see the default storage pool. Available pools: {{ kcli_pools.stdout_lines }}"
-  when: 
+  when:
     - kcli_pools.rc == 0
     - "'default' not in kcli_pools.stdout"
 

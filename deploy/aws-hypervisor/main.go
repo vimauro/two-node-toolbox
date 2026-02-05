@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,17 +27,30 @@ func main() {
 
 	f, err := os.Open(sshConfigPath)
 	if err != nil {
-		panic(err)
+		if os.IsNotExist(err) {
+			fmt.Fprintln(os.Stderr, "ssh config file not found, skipping update")
+			os.Exit(0)
+		} else {
+			panic(err)
+		}
 	}
+
+	defer f.Close()
+
 	cfg, err := ssh_config.Decode(f)
 	if err != nil {
 		panic(err)
 	}
 
+	matched := false
 	for _, host := range cfg.Hosts {
-		if !host.Matches(key) {
+
+		isWildcardOnly := len(host.Patterns) == 1 && host.Patterns[0].String() == "*"
+		if isWildcardOnly || !host.Matches(key) {
 			continue
 		}
+
+		matched = true
 		for _, node := range host.Nodes {
 			switch t := node.(type) {
 			case *ssh_config.KV:
@@ -53,8 +67,13 @@ func main() {
 		}
 	}
 
-	bits, _ := cfg.MarshalText()
-	if err := os.WriteFile(sshConfigPath, bits, 0644); err != nil {
-		panic(err)
+	if !matched {
+		fmt.Fprintf(os.Stderr, "host %s not found in ssh config file, skipping update\n", key)
+		os.Exit(0)
+	} else {
+		bits, _ := cfg.MarshalText()
+		if err := os.WriteFile(sshConfigPath, bits, 0644); err != nil {
+			panic(err)
+		}
 	}
 }

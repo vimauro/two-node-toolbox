@@ -30,8 +30,6 @@ The following programs must be present in your local environment:
 - golang
 - ansible
 
-Also:
-- .ssh/config file must exist
 
 #### Extra dependencies
 For automatic Redfish Pacemaker configuration on 4.19, you also need:
@@ -145,10 +143,24 @@ $ make redeploy-cluster
 This option:
 - Automatically cleans up the existing cluster
 - Supports interactive mode selection (arbiter or fencing)
+- **Preserves the original installation method** (IPI or Agent) from the previous deployment
 - Intelligently detects cluster topology changes
 - For same topology: Uses make redeploy (fast, preserves cached data)
 - For topology changes: Uses make realclean + full installation (slower but clean)
 - Integrates with Ansible playbooks for orchestration
+
+**Installation method preservation:**
+The redeploy command reads the installation method from the cluster state file (`aws-hypervisor/instance-data/cluster-vm-state.json`) and uses the same method for redeployment. If you originally deployed with `make deploy fencing-agent`, redeploy will use `make agent`. If you deployed with `make deploy fencing-ipi`, it will use `make all` (IPI).
+
+To manually override the installation method during redeploy, you can edit the state file before running redeploy:
+```bash
+# Check current method
+jq '.installation_method' deploy/aws-hypervisor/instance-data/cluster-vm-state.json
+
+# Change to AGENT (if needed)
+jq '.installation_method = "AGENT"' deploy/aws-hypervisor/instance-data/cluster-vm-state.json > /tmp/state.json && \
+mv /tmp/state.json deploy/aws-hypervisor/instance-data/cluster-vm-state.json
+```
 
 **When to use redeploy:**
 - When you want to refresh the cluster with the latest changes
@@ -294,7 +306,8 @@ $ podman restart external-squid
 
 **Cluster State Tracking:**
 - State saved in `aws-hypervisor/instance-data/cluster-vm-state.json`
-- Tracks deployment mode (arbiter/fencing)
+- Tracks deployment topology (arbiter/fencing) and installation method (IPI/Agent)
+- Preserves installation method across redeploys
 - Detects configuration changes for intelligent cleanup
 
 **VM Infrastructure Management:**

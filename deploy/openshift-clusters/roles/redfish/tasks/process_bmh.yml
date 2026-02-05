@@ -17,8 +17,8 @@
 - name: Extract node name from BMH status
   set_fact:
     node_name: "{{ bmh_detail.resources[0].status.hardware.hostname }}"
-  when: 
-    - bmh_detail.resources is defined 
+  when:
+    - bmh_detail.resources is defined
     - bmh_detail.resources | length > 0
     - bmh_detail.resources[0].status.hardware.hostname is defined
 
@@ -79,7 +79,6 @@
     var: pcs_stonith_status_result
   when: pcs_stonith_status_result is defined
 
-
 - name: Create PCS stonith resource on node {{ node_name }} if it doesn't exist
   # Using OCP debug command to access the node without requiring SSH
   ansible.builtin.shell: |
@@ -111,7 +110,6 @@
     var: pcs_stonith_create_result
   when: pcs_stonith_create_result is defined
 
-
 - name: Enable PCS stonith on node {{ node_name }}
   # Using OCP debug command to access the node without requiring SSH
   ansible.builtin.shell: |
@@ -133,6 +131,4 @@
   debug:
     var: pcs_stonith_create_result
   when: pcs_stonith_create_result is defined
-
-
 

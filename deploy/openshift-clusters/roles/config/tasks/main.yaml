@@ -1,3 +1,4 @@
+---
 - name: Check if instance.env exists
   stat:
     path: "{{ playbook_dir }}/../aws-hypervisor/instance.env"
