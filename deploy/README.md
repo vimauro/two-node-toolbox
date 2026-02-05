@@ -30,8 +30,6 @@ The following programs must be present in your local environment:
 - golang
 - ansible
 
-Also:
-- .ssh/config file must exist
 
 #### Extra dependencies
 For automatic Redfish Pacemaker configuration on 4.19, you also need:
