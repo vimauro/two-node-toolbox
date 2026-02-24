@@ -14,4 +14,6 @@ kubeadmin_password_path: "{{ ansible_user_dir }}/.kcli/clusters/{{ test_cluster_
 
 # Topology-based computed values
 feature_set: "{{ 'TechPreviewNoUpgrade' if topology == 'arbiter' else 'DevPreviewNoUpgrade' }}"
-enable_arbiter: "{{ 'true' if topology == 'arbiter' else 'false' }}"
+
+# Arbiter count - default to 1 for arbiter topology, else 0
+arbiters: "{{ 1 if topology == 'arbiter' else 0 }}" 

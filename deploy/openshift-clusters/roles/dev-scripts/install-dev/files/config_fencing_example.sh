@@ -20,10 +20,6 @@ export CI_TOKEN="sha256~<PASTE_YOUR_CI_TOKEN_HERE>"
 # You can find the latest public images in https://quay.io/repository/openshift-release-dev/ocp-release?tab=tags 
 # and select your preferred version. Public sources can be found at https://mirror.openshift.com/pub/openshift-v4/
 
-export OPENSHIFT_RELEASE_IMAGE=quay.io/openshift-release-dev/ocp-release:4.19.5-multi
+export OPENSHIFT_RELEASE_IMAGE=quay.io/openshift-release-dev/ocp-release:4.21.0-multi
 # Unless you need to override the installer image, this is not needed
 # export OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE=""
-
-
-
-

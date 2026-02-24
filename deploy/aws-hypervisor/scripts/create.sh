@@ -388,11 +388,22 @@ echo "${HOST_PRIVATE_IP}" > "${SCRIPT_DIR}/../${SHARED_DIR}/private_address"
 echo "Waiting up to 10 mins for RHEL host to be up."
 timeout 10m aws ec2 wait instance-status-ok --instance-id "${INSTANCE_ID}" --no-cli-pager
 
-sleep 15
-
 # Add the host key to known_hosts to avoid prompts while maintaining security
 echo "Adding host key for $HOST_PUBLIC_IP to known_hosts..."
-ssh-keyscan -H "$HOST_PUBLIC_IP" >> ~/.ssh/known_hosts 2>/dev/null
+max_attempts=5
+retry_delay=5
+for ((attempt=1; attempt<=max_attempts; attempt++)); do
+    if ssh-keyscan -H "$HOST_PUBLIC_IP" >> ~/.ssh/known_hosts 2>/dev/null; then
+        echo "Host key added successfully"
+        break
+    fi
+    if ((attempt < max_attempts)); then
+        echo "SSH not ready (attempt $attempt/$max_attempts), retrying in ${retry_delay}s..."
+        sleep "$retry_delay"
+    else
+        echo "Warning: Could not retrieve host key after $max_attempts attempts"
+    fi
+done
 
 echo "updating sshconfig for aws-hypervisor"
 (cd "${SCRIPT_DIR}/.." && go run main.go -k aws-hypervisor -h "$HOST_PUBLIC_IP")

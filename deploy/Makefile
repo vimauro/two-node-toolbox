@@ -1,3 +1,18 @@
+# Valid cluster types for 'make deploy <cluster-type>'
+VALID_CLUSTER_TYPES := fencing-ipi fencing-agent arbiter-ipi arbiter-agent arbiter-kcli fencing-kcli
+
+# Handle 'make deploy <cluster-type>' pattern
+# When 'deploy' is first, validate any following arguments are valid cluster types
+ifeq (deploy,$(firstword $(MAKECMDGOALS)))
+  DEPLOY_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+  ifneq ($(DEPLOY_ARGS),)
+    INVALID_ARGS := $(filter-out $(VALID_CLUSTER_TYPES),$(DEPLOY_ARGS))
+    ifneq ($(INVALID_ARGS),)
+      $(error Unknown cluster type: '$(INVALID_ARGS)'. Run 'make help' for more information.)
+    endif
+  endif
+endif
+
 create:
 	@./aws-hypervisor/scripts/create.sh
 
@@ -44,16 +59,22 @@ inventory:
 	@./aws-hypervisor/scripts/inventory.sh
 
 fencing-ipi:
-	@./openshift-clusters/scripts/deploy-fencing-ipi.sh
+	@./openshift-clusters/scripts/deploy-cluster.sh --topology fencing --method ipi
 
 fencing-agent:
-	@./openshift-clusters/scripts/deploy-fencing-agent.sh
+	@./openshift-clusters/scripts/deploy-cluster.sh --topology fencing --method agent
 
 arbiter-ipi:
-	@./openshift-clusters/scripts/deploy-arbiter-ipi.sh
+	@./openshift-clusters/scripts/deploy-cluster.sh --topology arbiter --method ipi
 
 arbiter-agent:
-	@./openshift-clusters/scripts/deploy-arbiter-agent.sh
+	@./openshift-clusters/scripts/deploy-cluster.sh --topology arbiter --method agent
+
+arbiter-kcli:
+	@./openshift-clusters/scripts/deploy-cluster.sh --topology arbiter --method kcli
+
+fencing-kcli:
+	@./openshift-clusters/scripts/deploy-cluster.sh --topology fencing --method kcli
 
 patch-nodes:
 	@./openshift-clusters/scripts/patch-nodes.sh
@@ -65,6 +86,8 @@ help:
 	@echo ""
 	@echo "Instance Lifecycle Management:"
 	@echo "  deploy               - Create, initialize, and update inventory for new EC2 instance"
+	@echo "  deploy <cluster-type>- Deploy EC2 instance AND deploy the specified cluster type"
+	@echo "	 		 Valid types: $(VALID_CLUSTER_TYPES)"
 	@echo "  create               - Create new EC2 instance"
 	@echo "  init                 - Initialize deployed instance"
 	@echo "  start                - Start stopped EC2 instance"
@@ -77,11 +100,15 @@ help:
 	@echo "  info                 - Display instance information"
 	@echo "  inventory            - Update inventory.ini with current instance IP" 
 	@echo ""
-	@echo "OpenShift Cluster Management:"
+	@echo "OpenShift Cluster Deployment:"
 	@echo "  fencing-ipi          - Deploy fencing IPI cluster (non-interactive)"
 	@echo "  fencing-agent        - Deploy fencing Agent cluster (non-interactive) (WIP Experimental)"
 	@echo "  arbiter-ipi          - Deploy arbiter IPI cluster (non-interactive)"
 	@echo "  arbiter-agent        - Deploy arbiter Agent cluster (non-interactive)"
+	@echo "  arbiter-kcli         - Deploy arbiter cluster using kcli (non-interactive)"
+	@echo "  fencing-kcli         - Deploy fencing cluster using kcli (non-interactive)"
+	@echo ""
+	@echo "OpenShift Cluster Management:"
 	@echo "  redeploy-cluster     - Redeploy OpenShift cluster using dev-scripts make redeploy"
 	@echo "  shutdown-cluster     - Shutdown OpenShift cluster VMs in orderly fashion"
 	@echo "  startup-cluster      - Start up OpenShift cluster VMs and proxy container"

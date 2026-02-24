@@ -17,8 +17,7 @@
     # Default to non-interactive mode to prevent prompts during automated runs
     # Set interactive_mode: true to enable prompts for manual execution
     interactive_mode: false
-
-    # Default topology is fencing (can be overridden to 'arbiter' if needed, not supported at the moment)
+    # Default topology is fencing (can be overridden to 'arbiter' for TNA clusters)
     # This default ensures no prompt is triggered when interactive_mode is false
     topology: fencing
 

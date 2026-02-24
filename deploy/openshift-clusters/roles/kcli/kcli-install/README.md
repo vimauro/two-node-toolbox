@@ -16,7 +16,7 @@ But adds comprehensive validation and error checking.
 **Consistent with install-dev role**: This role follows the same patterns as the existing `install-dev` role, using identical variable names (`test_cluster_name`, `topology`) and state management for seamless integration.
 
 Key features:
-- Automated two-node OpenShift deployment with fencing or arbiter (future release)
+- Automated two-node OpenShift deployment with fencing or arbiter topology
 - Configurable VM specifications and networking
 - Integration with kcli's BMC/Redfish use of libvirt and sushytools for fencing (ksushy)
 - Support for both interactive and non-interactive deployment
@@ -65,8 +65,8 @@ This role follows the same authentication file conventions as the dev-scripts ro
 ### Cluster Configuration
 
 - `topology`: Deployment topology (required)
-  - "fencing": Two-node cluster with automatic fencing 
-  - "arbiter": Two-node cluster with arbiter node (not supported yet)
+  - "fencing": Two-node cluster with automatic fencing
+  - "arbiter": Two-node cluster with arbiter node (TNA)
 - `ctlplanes`: Number of control plane nodes (default: 2, required for two-node)
 - `workers`: Number of worker nodes (default: 0 for two-node configuration)
 - `cluster_network_type`: OpenShift network type (default: "OVNKubernetes")
@@ -109,8 +109,11 @@ If you're installing a specific openshift release image, you will need to set th
 
 ### Arbiter Configuration (when topology="arbiter")
 
-- `enable_arbiter`: Automatically set to "true" for arbiter topology
-- `arbiter_memory`: Memory for arbiter node in MB (default: 16384)
+- `platform`: Platform type - "none" , "baremetal" or "external" (required for arbiter)
+- `arbiters`: Number of arbiter nodes (default: 1)
+- `arbiter_memory`: Memory for arbiter node in MB (default: 8192)
+- `arbiter_numcpus`: CPU cores for arbiter node (default: 2)
+- `arbiter_disk_size`: Disk size for arbiter node in GB (default: 30)
 
 ### Deployment Options
 

@@ -4,7 +4,7 @@ This guide covers deploying OpenShift two-node clusters using the kcli virtualiz
 
 ## Overview
 
-The kcli deployment method automates OpenShift two-node cluster creation using **fencing topology** by default. Arbiter topology support will be available for future releases.
+The kcli deployment method automates OpenShift two-node cluster creation supporting both **fencing** and **arbiter** topologies. Fencing topology is the default.
 
 ## 1. Machine Requirements
 
@@ -138,10 +138,20 @@ ansible-playbook kcli-install.yml \
 **Fencing Topology:**
 ```yaml
 topology: "fencing"
+platform: "baremetal"
 bmc_user: "admin"
 bmc_password: "admin123"
-bmc_driver: "redfish"  
+bmc_driver: "redfish"
 ksushy_port: 9000
+```
+
+**Arbiter Topology (TNA):**
+```yaml
+topology: "arbiter"
+platform: "none"
+arbiter_memory: 8192
+arbiter_numcpus: 2
+arbiter_disk_size: 30
 ```
 
 ## 5. Deployment
@@ -163,6 +173,17 @@ ansible-playbook kcli-install.yml -i inventory.ini
 ansible-playbook kcli-install.yml -i inventory.ini \
   -e "test_cluster_name=prod-edge-cluster"
 
+# Deploy arbiter cluster
+ansible-playbook kcli-install.yml -i inventory.ini \
+  -e "topology=arbiter" \
+  -e "interactive_mode=false"
+
+# Deploy arbiter cluster with custom configuration
+ansible-playbook kcli-install.yml -i inventory.ini \
+  -e "topology=arbiter" \
+  -e "platform=none" \
+  -e "arbiter_memory=16384" \
+  -e "interactive_mode=false"
 ```
 
 To redeploy a cluster, check the [redeployment](#9-redeployment) section

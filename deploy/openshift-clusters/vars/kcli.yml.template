@@ -14,8 +14,8 @@ workers: 0
 
 # OpenShift version configuration
 ocp_version: candidate
-ocp_tag: '4.20'
-openshift_release_image: "quay.io/openshift-release-dev/ocp-release:4.20.0-ec.6-multi"  # Optional: override with specific release image
+ocp_tag: '4.21'
+openshift_release_image: "quay.io/openshift-release-dev/ocp-release:4.21.0-multi"  # Optional: override with specific release image
 openshift_ci: false  # Set to true to avoid using CI_TOKEN (has side effects)
 
 # Virtual machine specifications
@@ -38,8 +38,13 @@ bmc_password: admin123
 bmc_driver: redfish  # "redfish" or "ipmi"
 ksushy_port: 9000
 
-# Arbiter-specific configuration (only used when topology == "arbiter") 
-arbiter_memory: 16384  # Memory for arbiter node
+# Platform configuration: "baremetal" or "none"
+platform: baremetal
+
+# Arbiter-specific configuration (only used when topology == "arbiter")
+arbiter_memory: 8192
+arbiter_numcpus: 2
+arbiter_disk_size: 30
 
 # State management
 cluster_state_dir: "../aws-hypervisor/instance-data"
