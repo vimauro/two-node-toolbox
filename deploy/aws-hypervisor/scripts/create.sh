@@ -386,7 +386,14 @@ echo "${HOST_PUBLIC_IP}" > "${SCRIPT_DIR}/../${SHARED_DIR}/public_address"
 echo "${HOST_PRIVATE_IP}" > "${SCRIPT_DIR}/../${SHARED_DIR}/private_address"
 
 echo "Waiting up to 10 mins for RHEL host to be up."
-timeout 10m aws ec2 wait instance-status-ok --instance-id "${INSTANCE_ID}" --no-cli-pager
+# The 'aws ec2 wait' command polls every 15s for up to 40 attempts (~10 min) by default.
+# This avoids using the 'timeout' command which is not available on macOS.
+if ! aws ec2 wait instance-status-ok \
+    --instance-id "${INSTANCE_ID}" \
+    --no-cli-pager; then
+    echo "ERROR: Instance ${INSTANCE_ID} failed to reach OK status within the timeout period"
+    exit 1
+fi
 
 # Add the host key to known_hosts to avoid prompts while maintaining security
 echo "Adding host key for $HOST_PUBLIC_IP to known_hosts..."
