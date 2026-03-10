@@ -48,3 +48,15 @@ sudo subscription-manager repos \
 --enable "rhel-9-for-$(uname -m)-appstream-rpms" \
 --enable "rhel-9-for-$(uname -m)-baseos-rpms" \
 --enable "rhocp-$(get_ocp_version)-for-rhel-9-$(uname -m)-rpms"
+
+# Enable CodeReady Builder (CRB) repo for -devel packages (e.g. libvirt-devel).
+# On RHUI instances (like AWS), subscription-manager repos --enable doesn't work
+# for CRB because repos are managed by RHUI configuration. The 'crb' command
+# handles both RHUI and non-RHUI environments correctly.
+if command -v crb &>/dev/null; then
+    echo "Enabling CRB repository..."
+    sudo /usr/bin/crb enable
+else
+    echo "WARNING: 'crb' command not found, attempting subscription-manager fallback"
+    sudo subscription-manager repos --enable "codeready-builder-for-rhel-9-$(uname -m)-rpms" || true
+fi
