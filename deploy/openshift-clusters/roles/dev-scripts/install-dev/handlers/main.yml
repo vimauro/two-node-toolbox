@@ -1,3 +1,6 @@
 ---
 - name: Set OCP project
-  command: oc --kubeconfig="{{kubeconfig_path}}" project openshift-machine-api
+  command: oc --kubeconfig="{{ kubeconfig_path }}" project openshift-machine-api
+  when: kubeconfig_path is defined
+  failed_when: false
+  changed_when: false
