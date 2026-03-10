@@ -1,4 +1,28 @@
 ---
+- name: Read config file to check for CI registry usage
+  set_fact:
+    config_content: "{{ lookup('file', config_file[method]) }}"
+  delegate_to: localhost
+  become: false
+
+- name: Read pull secret to check for CI registry auth
+  set_fact:
+    pull_secret_content: "{{ lookup('file', 'pull-secret.json') | from_json }}"
+  delegate_to: localhost
+  become: false
+
+- name: Warn if using CI registry images without CI auth in pull secret
+  fail:
+    msg: >-
+      Your config uses a CI registry image (registry.ci.openshift.org) but your
+      pull secret does not include credentials for registry.ci.openshift.org.
+      Either add CI registry credentials to your pull secret or switch to a
+      public release image (e.g. quay.io/openshift-release-dev/ocp-release).
+      See the setup guide for instructions on obtaining CI registry credentials.
+  when:
+    - "'registry.ci.openshift.org' in config_content"
+    - "'registry.ci.openshift.org' not in (pull_secret_content.auths | default({}) | list)"
+
 - name: Copy pull secrets
   copy:
     dest: "{{dev_scripts_path}}/pull_secret.json"
