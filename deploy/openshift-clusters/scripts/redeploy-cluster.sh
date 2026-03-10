@@ -217,7 +217,7 @@ echo "=================================="
 # Convert method to lowercase for ansible (state file stores uppercase)
 ansible-playbook redeploy.yml -i inventory.ini \
     --extra-vars "topology=${topology}" \
-    --extra-vars "method=${current_installation_method,,}" \
+    --extra-vars "method=$(echo "${current_installation_method}" | tr '[:upper:]' '[:lower:]')" \
     --extra-vars "vm_cleanup_needed=${vm_cleanup_needed}" \
     --extra-vars "clean_needed=${clean_needed:-false}" \
     --extra-vars "cleanup_reason=${cleanup_reason}" \
