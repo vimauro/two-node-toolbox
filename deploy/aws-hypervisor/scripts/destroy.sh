@@ -4,6 +4,10 @@ SCRIPT_DIR=$(dirname "$0")
 # shellcheck source=/dev/null
 source "${SCRIPT_DIR}/common.sh"
 
+set -o nounset
+set -o errexit
+set -o pipefail
+
 # Check if instance data directory exists and has the required files
 instance_data_dir="${SCRIPT_DIR}/../${SHARED_DIR}"
 public_address_file="${instance_data_dir}/public_address"
@@ -32,6 +36,18 @@ else
     
     echo "Unregistering subscription manager on instance..."
     ssh "$ssh_host_ip" "sudo subscription-manager unregister" || echo "Warning: Failed to unregister subscription manager (instance may be unreachable or not registered)"
+fi
+
+# Cancel capacity reservation if it exists
+reservation_file="${instance_data_dir}/capacity-reservation-id"
+if [[ -f "${reservation_file}" ]]; then
+    reservation_id=$(cat "${reservation_file}")
+    if [[ -n "${reservation_id}" && "${reservation_id}" != "null" ]]; then
+        cancel_capacity_reservation "${reservation_id}" "${REGION}"
+    fi
+    # Clean up capacity reservation files
+    rm -f "${reservation_file}"
+    rm -f "${instance_data_dir}/availability-zone"
 fi
 
 # Delete the CloudFormation stack
