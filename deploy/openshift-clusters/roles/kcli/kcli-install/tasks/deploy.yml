@@ -20,6 +20,7 @@
   poll: 30
   environment:
     KUBECONFIG: "{{ kubeconfig_path }}"
+    OPENSHIFT_INSTALL_EXPERIMENTAL_DISABLE_IMAGE_POLICY: "true"
 
 - name: Check deployment status
   fail:
