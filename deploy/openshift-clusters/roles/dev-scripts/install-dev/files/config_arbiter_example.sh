@@ -38,3 +38,6 @@ export OPENSHIFT_CI="true"
 export OPENSHIFT_RELEASE_IMAGE=quay.io/openshift-release-dev/ocp-release:4.21.0-x86_64
 # Unless you need to override the installer image, this is not needed
 # export OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE=""
+
+# Disable sigstore image verification during installation
+export OPENSHIFT_INSTALL_EXPERIMENTAL_DISABLE_IMAGE_POLICY=true
