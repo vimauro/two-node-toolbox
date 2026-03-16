@@ -215,9 +215,10 @@ echo "=================================="
 
 # Call ansible in non-interactive mode with all parameters pre-determined
 # Convert method to lowercase for ansible (state file stores uppercase)
+# Uses tr instead of ${var,,} for bash 3.2 (macOS) compatibility.
 ansible-playbook redeploy.yml -i inventory.ini \
     --extra-vars "topology=${topology}" \
-    --extra-vars "method=${current_installation_method,,}" \
+    --extra-vars "method=$(echo "${current_installation_method}" | tr '[:upper:]' '[:lower:]')" \
     --extra-vars "vm_cleanup_needed=${vm_cleanup_needed}" \
     --extra-vars "clean_needed=${clean_needed:-false}" \
     --extra-vars "cleanup_reason=${cleanup_reason}" \
