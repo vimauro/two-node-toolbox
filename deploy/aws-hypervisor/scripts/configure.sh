@@ -53,10 +53,16 @@ sudo subscription-manager repos \
 # On RHUI instances (like AWS), subscription-manager repos --enable doesn't work
 # for CRB because repos are managed by RHUI configuration. The 'crb' command
 # handles both RHUI and non-RHUI environments correctly.
-if command -v crb &>/dev/null; then
-    echo "Enabling CRB repository..."
-    sudo /usr/bin/crb enable
-else
-    echo "WARNING: 'crb' command not found, attempting subscription-manager fallback"
-    sudo subscription-manager repos --enable "codeready-builder-for-rhel-9-$(uname -m)-rpms" || true
+enable_crb_repo() {
+    if command -v crb &>/dev/null; then
+        sudo crb enable
+    else
+        sudo subscription-manager repos --enable "codeready-builder-for-rhel-9-$(uname -m)-rpms"
+    fi
+}
+
+echo "Enabling CRB repository..."
+if ! enable_crb_repo; then
+    echo "ERROR: Failed to enable CRB repository. libvirt-devel will be unavailable."
+    exit 1
 fi
