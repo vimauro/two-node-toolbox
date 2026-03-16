@@ -5,11 +5,19 @@
   delegate_to: localhost
   become: false
 
-- name: Read pull secret to check for CI registry auth
-  set_fact:
-    pull_secret_content: "{{ lookup('file', 'pull-secret.json') | from_json }}"
-  delegate_to: localhost
-  become: false
+- name: Parse pull secret JSON
+  block:
+    - name: Read pull secret to check for CI registry auth
+      set_fact:
+        pull_secret_content: "{{ lookup('file', 'pull-secret.json') | from_json }}"
+      delegate_to: localhost
+      become: false
+  rescue:
+    - name: Fail with pull secret parse error
+      fail:
+        msg: >-
+          Failed to parse pull-secret.json. Ensure the file contains valid JSON.
+          You can validate it with: python3 -m json.tool pull-secret.json
 
 - name: Warn if using CI registry images without CI auth in pull secret
   fail:
