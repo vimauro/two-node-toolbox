@@ -8,34 +8,25 @@ set -o nounset
 set -o errexit
 set -o pipefail
 
-# Start instance with capacity error detection
-# Provides actionable guidance if start fails due to insufficient capacity
-function start_instance_with_capacity_check() {
+# Ensure instance uses open capacity reservation preference before starting.
+# The capacity reservation from create time is ephemeral (auto-expires after ~1 hour),
+# so a stopped instance must not target a specific reservation that no longer exists.
+function ensure_open_capacity_preference() {
     local instance_id="$1"
     local region="$2"
 
-    local output
-    set +e
-    output=$(aws --region "${region}" ec2 start-instances --instance-ids "${instance_id}" --no-cli-pager 2>&1)
-    local status=$?
-    set -e
+    local current_pref
+    current_pref=$(aws --region "${region}" ec2 describe-instances \
+        --instance-ids "${instance_id}" \
+        --query 'Reservations[0].Instances[0].CapacityReservationSpecification.CapacityReservationPreference' \
+        --output text --no-cli-pager 2>/dev/null || echo "unknown")
 
-    if [[ ${status} -ne 0 ]]; then
-        if echo "${output}" | grep -qi "InsufficientInstanceCapacity\|InsufficientCapacity\|capacity"; then
-            msg_err "Cannot start instance: No capacity available in this Availability Zone"
-            msg_err ""
-            msg_err "EC2 instances are permanently bound to their original AZ and cannot be moved."
-            msg_err "The AZ where this instance was created currently has no available capacity"
-            msg_err "for this instance type."
-            msg_err ""
-            msg_err "To resolve, destroy and recreate the instance (will find an AZ with capacity):"
-            msg_err "  make destroy && make create"
-            msg_err ""
-            msg_err "Note: This will delete any data on the hypervisor (clusters, images, etc.)"
-            exit 1
-        fi
-        msg_err "Failed to start instance: ${output}"
-        exit 1
+    if [[ "${current_pref}" != "open" ]]; then
+        msg_info "Switching capacity reservation preference to 'open'..."
+        aws --region "${region}" ec2 modify-instance-capacity-reservation-attributes \
+            --instance-id "${instance_id}" \
+            --capacity-reservation-specification "CapacityReservationPreference=open" \
+            --no-cli-pager > /dev/null
     fi
 }
 
@@ -58,8 +49,9 @@ case "${INSTANCE_STATE}" in
         echo "Instance is already running."
         ;;
     "stopped")
+        ensure_open_capacity_preference "${INSTANCE_ID}" "${REGION}"
         echo "Starting instance..."
-        start_instance_with_capacity_check "${INSTANCE_ID}" "${REGION}"
+        aws --region "${REGION}" ec2 start-instances --instance-ids "${INSTANCE_ID}" --no-cli-pager > /dev/null
         echo "Waiting for instance to start..."
         aws --region "${REGION}" ec2 wait instance-running --instance-ids "${INSTANCE_ID}" --no-cli-pager
         echo "Waiting for instance to be ready..."
@@ -68,8 +60,9 @@ case "${INSTANCE_STATE}" in
     "stopping")
         echo "Instance is currently stopping. Waiting for it to stop completely..."
         aws --region "${REGION}" ec2 wait instance-stopped --instance-ids "${INSTANCE_ID}" --no-cli-pager
+        ensure_open_capacity_preference "${INSTANCE_ID}" "${REGION}"
         echo "Now starting instance..."
-        start_instance_with_capacity_check "${INSTANCE_ID}" "${REGION}"
+        aws --region "${REGION}" ec2 start-instances --instance-ids "${INSTANCE_ID}" --no-cli-pager > /dev/null
         echo "Waiting for instance to start..."
         aws --region "${REGION}" ec2 wait instance-running --instance-ids "${INSTANCE_ID}" --no-cli-pager
         echo "Waiting for instance to be ready..."
