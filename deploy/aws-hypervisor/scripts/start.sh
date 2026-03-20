@@ -19,7 +19,7 @@ function ensure_open_capacity_preference() {
     current_pref=$(aws --region "${region}" ec2 describe-instances \
         --instance-ids "${instance_id}" \
         --query 'Reservations[0].Instances[0].CapacityReservationSpecification.CapacityReservationPreference' \
-        --output text --no-cli-pager 2>/dev/null || echo "unknown")
+        --output text --no-cli-pager || echo "query-failed")
 
     if [[ "${current_pref}" != "open" ]]; then
         msg_info "Switching capacity reservation preference to 'open'..."
