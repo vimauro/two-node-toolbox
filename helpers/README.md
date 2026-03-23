@@ -253,6 +253,58 @@ If you don't want or are unable to use the previous Ansible playbooks, you can u
 
 **Note:** The shell script does not handle reboots automatically. You must manually reboot nodes after installation. Follow the instructions provided at the end of the script execution
 
+### Containerized Build Validation
+
+The `resource-agents-build/` directory contains Dockerfiles and a script for validating that resource-agents compiles correctly on CentOS Stream 9 and 10, without needing a hypervisor or cluster. This is useful for quickly verifying a branch builds before running the full `build-and-patch-resource-agents.yml` playbook.
+
+**Usage:**
+
+```bash
+cd helpers/resource-agents-build
+
+# Run both builds — prompts for repo and ref, press Enter to use defaults
+./local-build-test.sh
+
+# Skip prompts by providing values via flags
+./local-build-test.sh --repo https://github.com/myorg/resource-agents --ref my-feature-branch
+
+# Build individually with podman
+podman build -f Dockerfile.stream9 -t localhost/tnf-resource-agents-build:stream9 .
+podman build -f Dockerfile.stream10 -t localhost/tnf-resource-agents-build:stream10 .
+```
+
+**Script options:**
+
+| Option | Description |
+|--------|-------------|
+| `--repo URL` | Git repository URL (default: `https://github.com/ClusterLabs/resource-agents`) |
+| `--ref REF` | Git branch, tag, or commit (default: `main`) |
+| `-h`, `--help` | Show help |
+
+When no flags are provided, the script prompts for each value. Press Enter to use the default.
+
+**Extracting the built RPM from the container** (Stream 9 only — Stream 10 skips `make rpm`):
+
+```bash
+# Build from a specific branch
+./local-build-test.sh --ref my-feature-branch
+
+# Copy the RPM out of the Stream 9 image
+podman create --name ra-build localhost/tnf-resource-agents-build:stream9
+podman cp ra-build:/tmp/resource-agents.rpm ./resource-agents.rpm
+podman rm ra-build
+
+# Then patch your cluster nodes with it
+ansible-playbook -i ../../deploy/openshift-clusters/inventory.ini \
+  ../apply-rpm-patch.yml \
+  -l cluster_vms \
+  -e rpm_full_path=$(pwd)/resource-agents.rpm
+```
+
+This is useful when you want to validate the RPM locally before patching.
+
+**Stream 10 limitation:** `libqb-devel` is not yet available in EPEL 10. The Dockerfile builds libqb from source for `configure`/`make` validation, but skips `make rpm` since rpmbuild's `BuildRequires: libqb-devel` cannot be satisfied without the actual RPM package.
+
 ## Notes
 
 - Both tools use `rpm-ostree override replace` which is appropriate for updating existing packages
