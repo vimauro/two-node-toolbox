@@ -23,15 +23,25 @@ usage() {
     echo ""
     echo "If no options are provided, the script will prompt for values."
     echo "Press Enter at each prompt to use the default."
-    exit 0
+    exit "${1:-0}"
 }
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --repo) RESOURCE_AGENTS_REPO="$2"; shift 2 ;;
-        --ref)  RESOURCE_AGENTS_REF="$2"; shift 2 ;;
+        --repo)
+            if [[ -z "${2:-}" || "$2" == -* ]]; then
+                echo "Error: --repo requires a value (RESOURCE_AGENTS_REPO)" >&2
+                usage 1
+            fi
+            RESOURCE_AGENTS_REPO="$2"; shift 2 ;;
+        --ref)
+            if [[ -z "${2:-}" || "$2" == -* ]]; then
+                echo "Error: --ref requires a value (RESOURCE_AGENTS_REF)" >&2
+                usage 1
+            fi
+            RESOURCE_AGENTS_REF="$2"; shift 2 ;;
         -h|--help) usage ;;
-        *) echo "Unknown option: $1"; usage ;;
+        *) echo "Error: Unknown option: $1" >&2; usage 1 ;;
     esac
 done
 
