@@ -71,6 +71,34 @@ If you're using [Claude Code](https://claude.ai/code), use the `/setup` command 
 - Validating your setup
 
 Run `/setup` to begin, or `/setup <method>` to configure a specific deployment method (aws, external, kcli, dev-scripts).
+## Helpers
+
+The [helpers/](helpers/) directory contains utilities for cluster operations including resource-agents patching, fencing validation, and containerized build validation. To quickly verify a resource-agents branch compiles on CentOS Stream 9 and 10:
+
+```bash
+make test-resource-agents                          # prompts for repo and ref
+make test-resource-agents ARGS="--ref my-branch"   # skip prompts
+```
+
+To test the built RPM on a live cluster, extract it from the Stream 9 image and patch your nodes:
+
+```bash
+# Extract the RPM from the container image
+podman create --name ra-build localhost/tnf-resource-agents-build:stream9
+podman cp ra-build:/tmp/resource-agents.rpm ./resource-agents.rpm
+podman rm ra-build
+
+# Patch cluster nodes with the extracted RPM
+ansible-playbook -i deploy/openshift-clusters/inventory.ini \
+  helpers/apply-rpm-patch.yml \
+  -l cluster_vms \
+  -e rpm_full_path=$(pwd)/resource-agents.rpm
+```
+
+Alternatively, `make patch-nodes` (from `deploy/`) clones the resource-agents repo on the EC2 hypervisor, builds the RPM there natively, and patches the cluster nodes — all in one step, without needing a local container build.
+
+See [helpers/README.md](helpers/README.md) for full documentation.
+
 ## Troubleshooting with Claude Code
 
 If you're using [Claude Code](https://claude.ai/code), it can help you troubleshoot etcd issues on two-node fencing clusters. Simply ask Claude to diagnose your etcd problems and it will automatically collect diagnostics, analyze the cluster state, and recommend remediation steps. See [.claude/commands/etcd/README.md](.claude/commands/etcd/README.md) for details.

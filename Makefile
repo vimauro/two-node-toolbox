@@ -5,6 +5,9 @@ shellcheck:
 yamlfmt:
 	@./hack/yamlfmt.sh
 
+test-resource-agents:
+	@./helpers/resource-agents-build/local-build-test.sh $(ARGS)
+
 verify:
 	VALIDATE_ONLY=true $(MAKE) shellcheck
 	VALIDATE_ONLY=true $(MAKE) yamlfmt
