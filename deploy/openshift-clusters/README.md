@@ -32,8 +32,8 @@ This is the machine where you run the deployment scripts: all that's needed is A
 
 This is the target host where the cluster will be deployed.
 
-- Must be a CentOS 9 or RHEL 9 host.
-  - Alma and Rocky Linux 8 are also supported on a best effort basis.
+- Must be a RHEL 9 or RHEL 10 host (CentOS 9 also supported).
+  - Alma and Rocky Linux are also supported on a best effort basis.
   - Requires a file system that supports `d_type`. (Click [here](https://github.com/openshift-metal3/dev-scripts?tab=readme-ov-file#determining-if-your-filesystem-supports-d_type) for more info on this).
   - Ideally, it should be on a bare metal host.
   - Should have at least 64GB of RAM.

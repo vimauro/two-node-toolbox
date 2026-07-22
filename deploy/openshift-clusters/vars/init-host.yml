@@ -19,4 +19,6 @@ hostname_prefix: "{{ ansible_user | default('tnf') }}-dev"
 interactive_mode: false
 
 # OpenShift version configuration
-default_ocp_version: "4.22"
+# Leave empty to auto-detect from Sippy (RHEL 10+ defaults to 4.23 if auto-detected version is older).
+# Set explicitly to skip auto-detection. RHEL 10 requires 4.23+.
+default_ocp_version: ""

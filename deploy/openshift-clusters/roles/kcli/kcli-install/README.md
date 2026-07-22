@@ -26,7 +26,7 @@ Key features:
 
 ### System Requirements
 
-- CentOS 9 or RHEL 9 host (Rocky Linux/Alma Linux supported on best effort basis)
+- RHEL 9 or RHEL 10 host (CentOS 9, Rocky Linux, Alma Linux supported on best effort basis)
 - Minimum 64GB RAM, 240GB storage for two nodes
 - User with passwordless sudo access
 - libvirt/KVM virtualization support enabled in BIOS

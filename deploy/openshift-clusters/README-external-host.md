@@ -1,15 +1,15 @@
 # External Host Initialization for Two-Node Toolbox
 
-This document explains how to use Two-Node Toolbox (TNT) to install Two-Node OpenShift clusters on external RHEL hosts that are not provisioned through the AWS hypervisor automation. This workflow is designed for environments like Beaker, lab systems, or any pre-existing RHEL 9 hosts.
+This document explains how to use Two-Node Toolbox (TNT) to install Two-Node OpenShift clusters on external RHEL hosts that are not provisioned through the AWS hypervisor automation. This workflow is designed for environments like Beaker, lab systems, or any pre-existing RHEL 9 or RHEL 10 hosts.
 
 ## Overview
 
-The `init-host.yml` playbook provides the same host initialization functionality as the AWS hypervisor creation scripts, preparing your external RHEL host to run OpenShift two-node cluster deployments. It replaces the AWS-specific initialization steps with Ansible automation that works on any RHEL 9 system.
+The `init-host.yml` playbook provides the same host initialization functionality as the AWS hypervisor creation scripts, preparing your external RHEL host to run OpenShift two-node cluster deployments. It replaces the AWS-specific initialization steps with Ansible automation that works on any RHEL 9 or RHEL 10 system.
 
 ## Prerequisites
 
 ### Host Requirements
-- **Operating System**: RHEL 9.x with minimal installation
+- **Operating System**: RHEL 9.x or RHEL 10.x with minimal installation
 - **Hardware**: 64GB+ RAM, 500GB+ storage (with sufficient space in `/home`)
 - **Network**: Internet access for package downloads and registry access
 - **Access**: SSH access with sudo privileges
@@ -98,7 +98,7 @@ The `init-host.yml` playbook performs the following tasks to replicate AWS hyper
 - Configures Red Hat Subscription Manager
 - Registers system using activation key or interactive credentials
 - Enables required repositories:
-  - RHEL 9 BaseOS and AppStream
+  - RHEL BaseOS and AppStream
   - OpenShift Container Platform repositories
 
 #### Package Installation

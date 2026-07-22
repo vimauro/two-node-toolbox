@@ -11,7 +11,7 @@ The kcli deployment method automates OpenShift two-node cluster creation support
 **This section is identical to the main README.** Please refer to [section 1 of the main README](README.md#1-machine-requirements) for complete machine requirements including:
 
 - Client machine requirements (Ansible)
-- Remote machine requirements (RHEL 9, 64GB RAM, etc.)
+- Remote machine requirements (RHEL 9 or 10, 64GB RAM, etc.)
 - Optional AWS hypervisor setup
 
 The same prerequisites apply whether using dev-scripts or kcli deployment methods. If you're using a baremetal server not provisioned through the aws-hypervisor directory, please see the appropiate [README](README-external-host.md) to know how to run the init-host.yml playbook.

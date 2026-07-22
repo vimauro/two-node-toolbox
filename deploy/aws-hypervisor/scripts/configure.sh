@@ -7,17 +7,34 @@ RHEL_MAJOR_VERSION=$(. /etc/os-release && echo "${VERSION_ID%%.*}")
 sudo hostnamectl set-hostname "aws-${STACK_NAME}"
 
 function get_ocp_version() {
-    local latest_ga_ocp_version
-    local default_version="${DEFAULT_OCP_VERSION:-}"
-    if [[ -z "${default_version}" ]]; then
-        case "${RHEL_MAJOR_VERSION}" in
-            10) default_version="4.23" ;;
-            *)  default_version="4.22" ;;
-        esac
+    local explicit_version="${DEFAULT_OCP_VERSION:-}"
+
+    # If the user explicitly set DEFAULT_OCP_VERSION, respect it.
+    if [[ -n "${explicit_version}" ]]; then
+        if [[ "${RHEL_MAJOR_VERSION}" -ge 10 ]] && printf '%s\n%s\n' "4.23" "$explicit_version" | sort -V | head -1 | grep -qx "$explicit_version"; then
+            echo "ERROR: OCP ${explicit_version} requires RHEL 9. Set RHEL_VERSION=9 in instance.env or use OCP 4.23+." >&2
+            return 1
+        fi
+        echo "${explicit_version}"
+        return
     fi
+
+    # Auto-detect from Sippy when no explicit version is set.
+    local default_version
+    case "${RHEL_MAJOR_VERSION}" in
+        10) default_version="4.23" ;;
+        *)  default_version="4.22" ;;
+    esac
+
+    local latest_ga_ocp_version
     if latest_ga_ocp_version="$(curl -sL https://sippy.dptools.openshift.org/api/releases | jq -re '.ga_dates | to_entries | max_by(.value) | .key')";
     then
-        echo "${latest_ga_ocp_version:-$default_version}"
+        local version="${latest_ga_ocp_version:-$default_version}"
+        # On RHEL 10+, auto-detected versions below 4.23 are not compatible
+        if [[ "${RHEL_MAJOR_VERSION}" -ge 10 ]] && printf '%s\n%s\n' "4.23" "$version" | sort -V | head -1 | grep -qx "$version"; then
+            version="4.23"
+        fi
+        echo "$version"
     else
         echo "$default_version"
     fi

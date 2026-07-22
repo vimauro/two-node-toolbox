@@ -49,7 +49,7 @@ if ansible-playbook -i "${DEPLOY_DIR}/openshift-clusters/inventory.ini" \
     echo "The RPM has been built on the hypervisor and installed on all cluster nodes."
     echo "Cluster nodes have been rebooted to apply the changes."
     echo ""
-    echo "RPM location: ${HELPERS_DIR}/resource-agents-${RPM_VERSION}-1.el9.x86_64.rpm"
+    echo "RPM location: ${HELPERS_DIR}/resource-agents-${RPM_VERSION}-1.$(rpm --eval '%{dist}' | sed 's/^\.//').$(uname -m).rpm"
 else
     echo "Error: Resource-agents build and patch failed!"
     echo "Check the Ansible logs for more details."

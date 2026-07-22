@@ -27,14 +27,14 @@ The `/setup` command guides you through configuring the repository for first-tim
 ## Configuration Methods
 
 ### External Host (`/setup external`)
-Configures deployment to your own RHEL 9 server (non-AWS).
+Configures deployment to your own RHEL 9 or RHEL 10 server (non-AWS).
 
 **Files configured:**
 - `deploy/openshift-clusters/inventory.ini` - Target host details
 - RHSM credentials (env vars or config file) - For system registration
 - Ansible collections installation
 
-**Use when:** You have an existing RHEL 9 server (Beaker, lab system, etc.)
+**Use when:** You have an existing RHEL 9 or RHEL 10 server (Beaker, lab system, etc.)
 
 ### AWS Hypervisor (`/setup aws`)
 Configures automated RHEL hypervisor deployment in AWS EC2.

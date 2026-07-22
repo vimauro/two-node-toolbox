@@ -35,7 +35,7 @@ See [deploy/README.md](deploy/README.md) for complete command reference and [dep
 
 ### Option 2: Bring Your Own Server
 
-If you have an existing RHEL 9 server, initialize it and deploy a cluster:
+If you have an existing RHEL 9 or RHEL 10 server, initialize it and deploy a cluster:
 
 ```bash
 cd deploy/openshift-clusters/

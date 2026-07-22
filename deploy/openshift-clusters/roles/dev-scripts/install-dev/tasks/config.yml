@@ -117,12 +117,19 @@
     src: "{{config_file[method]}}"
   register: dev_scripts_config
 
+- name: Get RHEL major version
+  ansible.builtin.command: rpm -E %{rhel}
+  register: rhel_major
+  changed_when: false
+  when: install_host_deps | default(true)
+
 - name: Install dependencies
   ansible.builtin.dnf:
-    name:
-      - podman
-      - runc
-      - containernetworking-plugins
+    name: >-
+      {{
+        ['podman']
+        + (['runc', 'containernetworking-plugins'] if rhel_major.stdout | int < 10 else [])
+      }}
     state: present
   become: true
   when: install_host_deps | default(true)

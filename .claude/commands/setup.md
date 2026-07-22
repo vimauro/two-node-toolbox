@@ -88,7 +88,7 @@ Required for: dev-scripts (when using CI builds)
 
 ### External Host Configuration
 
-**Purpose**: Set up to deploy on your own RHEL 9 server (not AWS)
+**Purpose**: Set up to deploy on your own RHEL 9 or RHEL 10 server (not AWS)
 
 **Prerequisites to check:**
 - Check if ansible is installed: `which ansible-playbook`

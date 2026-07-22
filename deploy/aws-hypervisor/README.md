@@ -1,6 +1,6 @@
 # AWS Hypervisor Scripts
 
-This directory contains scripts for managing EC2 instances used as hypervisors for OpenShift development.
+This directory contains scripts for managing EC2 instances used as hypervisors for OpenShift development. By default, instances are provisioned with RHEL 10. To use a different RHEL version, set `RHEL_VERSION` in your `config/instance.env` (e.g., `RHEL_VERSION=9` for RHEL 9).
 
 ## Configuration
 
